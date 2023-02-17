@@ -8,8 +8,23 @@ window.addEventListener("load", function () {
   canvas.height = 720;
 
   //object player
-  class Player {}
+  class Player {
+    constructor(game) {
+      this.game = game;
+    }
+  }
 
   //the class Game will handle all the game logics
+  class Game {
+    constructor(canvas) {
+      //let's convert canvas into a class property
+      this.canvas = canvas;
+      this.width = this.canvas.width;
+      this.height = this.canvas.height;
   class Game {}
+    }
+  }
+
+  // we need a loop to animate our game
+  function animate() {}
 });
