@@ -66,7 +66,7 @@ window.addEventListener("load", function () {
         this.speedY = this.distanceY / distanceXY || 0;
       } else {
         this.speedX = this.distanceX / this.speedModifier;
-        this.speedY = this.distanceY / this.speedModifiers;
+        this.speedY = this.distanceY / this.speedModifier;
       }
 
       //create player movement
