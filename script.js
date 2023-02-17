@@ -7,10 +7,15 @@ window.addEventListener("load", function () {
   canvas.width = 1280;
   canvas.height = 720;
 
+  ctx.fillStyle = "white";
   //object player
   class Player {
     constructor(game) {
       this.game = game;
+      //coordinates for the collision radius
+      this.collisionX = this.game.width * 0.5;
+      this.collisionY = this.game.height * 0.5;
+      this.collisionRadius = 30;
     }
 
     //this method will draw the player
@@ -18,7 +23,13 @@ window.addEventListener("load", function () {
       //beginPath tells Javascript to begin drawing a new shape
       context.beginPath();
       //arc needs 5 arguments: x, y, radius, start angle(rad), end angle
-      context.arc(100, 100, 50, 0, Math.PI * 2);
+      context.arc(
+        this.collisionX,
+        this.collisionY,
+        this.collisionRadius,
+        0,
+        Math.PI * 2
+      );
       context.fill();
     }
   }
