@@ -25,6 +25,9 @@ window.addEventListener("load", function () {
       this.player = new Player(this);
     }
   }
+  //instantiate the Game class
+  const game = new Game(canvas);
+  console.log(game);
 
   // we need a loop to animate our game
   function animate() {}
