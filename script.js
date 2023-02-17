@@ -16,7 +16,7 @@ window.addEventListener("load", function () {
     constructor(game) {
       //transform the parameter into a property of this class.
       this.game = game;
-      //coordinates for the collision radius
+      //coordinates for the collision circle
       this.collisionX = this.game.width * 0.5;
       this.collisionY = this.game.height * 0.5;
       this.collisionRadius = 30;
@@ -39,12 +39,17 @@ window.addEventListener("load", function () {
       context.fill();
       context.restore();
       context.stroke();
+
+      //create a line to show the movement of the player
+      context.beginPath();
+      context.moveTo(this.collisionX, this.collisionY);
+      context.lineTo(this.game.mouse.x, this.game.mouse.y);
+      context.stroke();
     }
     //update will cause the player to move
     update() {
       this.collisionX = this.game.mouse.x;
       this.collisionY = this.game.mouse.y;
-      console.log(this.game.mouse.y);
     }
   }
 
