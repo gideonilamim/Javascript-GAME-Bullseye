@@ -8,6 +8,9 @@ window.addEventListener("load", function () {
   canvas.height = 720;
 
   ctx.fillStyle = "white";
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = "white";
+
   //object player
   class Player {
     constructor(game) {
@@ -30,7 +33,11 @@ window.addEventListener("load", function () {
         0,
         Math.PI * 2
       );
+      context.save();
+      context.globalAlpha = 0.5;
       context.fill();
+      context.restore();
+      context.stroke();
     }
   }
 
