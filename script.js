@@ -12,6 +12,15 @@ window.addEventListener("load", function () {
     constructor(game) {
       this.game = game;
     }
+
+    //this method will draw the player
+    draw(context) {
+      //beginPath tells Javascript to begin drawing a new shape
+      context.beginPath();
+      //arc needs 5 arguments: x, y, radius, start angle(rad), end angle
+      context.arc(100, 100, 50, 0, Math.PI * 2);
+      context.fill();
+    }
   }
 
   //the class Game will handle all the game logics
@@ -24,9 +33,16 @@ window.addEventListener("load", function () {
       //create a player automatically when we create a game
       this.player = new Player(this);
     }
+
+    //the Render method will draw the player
+    render(context) {
+      this.player.draw(context);
+    }
   }
+
   //instantiate the Game class
   const game = new Game(canvas);
+  game.render(ctx);
   console.log(game);
 
   // we need a loop to animate our game
