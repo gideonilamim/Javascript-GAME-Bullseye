@@ -20,6 +20,13 @@ window.addEventListener("load", function () {
       this.collisionX = this.game.width * 0.5;
       this.collisionY = this.game.height * 0.5;
       this.collisionRadius = 30;
+
+      //speed of the player
+      this.distanceX = 0;
+      this.distanceY = 0;
+      this.speedX = 0;
+      this.speedY = 0;
+      this.speedModifier = 10;
     }
 
     //this method will draw the player
@@ -46,10 +53,25 @@ window.addEventListener("load", function () {
       context.lineTo(this.game.mouse.x, this.game.mouse.y);
       context.stroke();
     }
+
     //update will cause the player to move
     update() {
-      this.collisionX = this.game.mouse.x;
-      this.collisionY = this.game.mouse.y;
+      //set the player speed
+      this.distanceX = this.game.mouse.x - this.collisionX;
+      this.distanceY = this.game.mouse.y - this.collisionY;
+      //we have to keep a constant speed
+      const distanceXY = Math.hypot(this.distanceX, this.distanceY);
+      if (distanceXY > this.speedModifier) {
+        this.speedX = this.distanceX / distanceXY || 0;
+        this.speedY = this.distanceY / distanceXY || 0;
+      } else {
+        this.speedX = this.distanceX / this.speedModifier;
+        this.speedY = this.distanceY / this.speedModifiers;
+      }
+
+      //create player movement
+      this.collisionX += this.speedX * this.speedModifier;
+      this.collisionY += this.speedY * this.speedModifier;
     }
   }
 
@@ -80,8 +102,10 @@ window.addEventListener("load", function () {
         this.mouse.pressed = false;
       });
       canvas.addEventListener("mousemove", (e) => {
-        this.mouse.x = e.offsetX;
-        this.mouse.y = e.offsetY;
+        if (this.mouse.pressed) {
+          this.mouse.x = e.offsetX;
+          this.mouse.y = e.offsetY;
+        }
       });
     }
 
