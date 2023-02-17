@@ -21,7 +21,8 @@ window.addEventListener("load", function () {
       this.canvas = canvas;
       this.width = this.canvas.width;
       this.height = this.canvas.height;
-  class Game {}
+      //create a player automatically when we create a game
+      this.player = new Player(this);
     }
   }
 
