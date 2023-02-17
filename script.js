@@ -75,6 +75,33 @@ window.addEventListener("load", function () {
     }
   }
 
+  class Obstacle {
+    constructor(game) {
+      this.game = game;
+      this.collisionX = Math.random() * this.game.width;
+      this.collisionY = Math.random() * this.game.width;
+      this.collisionRadius = 50;
+    }
+
+    draw(context) {
+      //beginPath tells Javascript to begin drawing a new shape
+      context.beginPath();
+      //arc needs 5 arguments: x, y, radius, start angle(rad), end angle
+      context.arc(
+        this.collisionX,
+        this.collisionY,
+        this.collisionRadius,
+        0,
+        Math.PI * 2
+      );
+      context.save();
+      context.globalAlpha = 0.5;
+      context.fill();
+      context.restore();
+      context.stroke();
+    }
+  }
+
   //the class Game will handle all the game logics
   class Game {
     constructor(canvas) {
@@ -84,6 +111,8 @@ window.addEventListener("load", function () {
       this.height = this.canvas.height;
       //create a player automatically when we create a game
       this.player = new Player(this);
+      this.numberOfObstacles = 5;
+      this.obstacles = [];
       this.mouse = {
         x: this.width * 0.5,
         y: this.height * 0.5,
@@ -114,12 +143,22 @@ window.addEventListener("load", function () {
       //this method will be called over and over again by animate.
       this.player.draw(context);
       this.player.update();
+      this.obstacles.forEach((obstacle) => obstacle.draw(context));
+    }
+
+    init() {
+      //populae the array of obstacles
+      for (let i = 0; i < this.numberOfObstacles; i++) {
+        //push inserts a new item to the array
+        this.obstacles.push(new Obstacle(this));
+      }
     }
   }
 
   //instantiate the Game class
   const game = new Game(canvas);
-  game.render(ctx);
+  game.init();
+  console.log(game);
 
   // we need a loop to animate our game
   function animate() {
