@@ -14,6 +14,7 @@ window.addEventListener("load", function () {
   //object player
   class Player {
     constructor(game) {
+      //transform the parameter into a property of this class.
       this.game = game;
       //coordinates for the collision radius
       this.collisionX = this.game.width * 0.5;
@@ -38,6 +39,12 @@ window.addEventListener("load", function () {
       context.fill();
       context.restore();
       context.stroke();
+    }
+    //update will cause the player to move
+    update() {
+      this.collisionX = this.game.mouse.x;
+      this.collisionY = this.game.mouse.y;
+      console.log(this.game.mouse.y);
     }
   }
 
@@ -75,15 +82,40 @@ window.addEventListener("load", function () {
 
     //the Render method will draw the player
     render(context) {
+      //this method will be called over and over again by animate.
       this.player.draw(context);
+      this.player.update();
     }
   }
 
   //instantiate the Game class
   const game = new Game(canvas);
   game.render(ctx);
-  console.log(game);
 
   // we need a loop to animate our game
-  function animate() {}
+  function animate() {
+    /*comment - cleaRect
+    The CanvasRenderingContext2D.clearRect() method of the Canvas 2D API 
+    erases the pixels in a rectangular area by setting them to transparent black. 
+
+    Note: Be aware that clearRect() may cause unintended side effects 
+    if you're not using paths properly. Make sure to call beginPath() 
+    before starting to draw new items after calling clearRect(). 
+
+    Syntax
+
+    clearRect(x, y, width, height)
+
+    (x, y, width, height) to create a rectangle
+    */
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    game.render(ctx);
+    /*Comment - requestAnimationFrame
+    requestAnimationFrame(function)  this method will tell the browser to repeat the function to create an animation.
+    here, it's reapeating the parent function*/
+    window.requestAnimationFrame(animate);
+  }
+
+  //call animate to start the animation
+  animate();
 });
