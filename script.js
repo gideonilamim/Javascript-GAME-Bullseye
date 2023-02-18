@@ -102,16 +102,12 @@ window.addEventListener("load", function () {
       we need to randomly pick one of them each time we render an obstacle.
       */
 
-      this.cropAtX = Math.round(Math.random() * 3) * 250;
-      this.cropAtY = Math.round(Math.random() * 2) * 250;
+      this.cropAtX = Math.floor(Math.random() * 4) * 250;
+      this.cropAtY = Math.floor(Math.random() * 3) * 250;
       this.spriteX = this.collisionX - 0.5 * this.spriteWidth;
       this.spriteY = this.collisionY - this.spriteWidth + this.collisionRadius;
 
-      console.log(this.cropAtX);
-      console.log(this.cropAtY);
-
-      //random sprite sheet
-      //the obstacle sprite sheet contains 12 different obstacles. we need to randomly pick one of them each time we render an obstacle.
+      this.obstacleType = this.obstacleType();
     }
 
     draw(context) {
@@ -157,12 +153,11 @@ window.addEventListener("load", function () {
     }
 
     obstacleType() {
+      //this method returns which type of obstacle it is
       const column = this.cropAtX / this.spriteWidth + 1;
       const row = this.cropAtY / this.spriteHeight;
       const obstacleType = row * 4 + column;
 
-      console.log("row: " + row);
-      console.log("column " + column);
       return obstacleType;
     }
   }
@@ -215,7 +210,7 @@ window.addEventListener("load", function () {
       //render the obstacles
       let attempts = 0;
       while (
-        attempts < this.numberOfObstacles * 4 &&
+        attempts < this.numberOfObstacles * 100 &&
         this.obstacles.length < this.numberOfObstacles
       ) {
         /*We don't want any overlapping obstacles. let's use brute force to check for empty spaces. That means we're gonna try until we find an empty space*/
@@ -226,6 +221,7 @@ window.addEventListener("load", function () {
         } else {
           //for the others, we need to check for empty spaces
           let emptySpace = true;
+          let duplicateType = false;
           this.obstacles.forEach((obstacle) => {
             //check if the space has been taken already
             const distanceY = Math.abs(
@@ -243,15 +239,22 @@ window.addEventListener("load", function () {
             if (distanceXY < allowedDistance) {
               emptySpace = false;
             }
+
+            //also look for duplicate obstacles
+            if (obstacle.obstacleType === newObstacle.obstacleType) {
+              duplicateType = true;
+            }
           });
+
           //if it's ok, push the new obstacle into the array
-          if (emptySpace) {
+          if (emptySpace && !duplicateType) {
             this.obstacles.push(newObstacle);
           }
 
           attempts++;
         }
       }
+      console.log(this.obstacles);
     }
   }
 
