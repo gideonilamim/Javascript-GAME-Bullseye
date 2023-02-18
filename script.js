@@ -79,8 +79,8 @@ window.addEventListener("load", function () {
     constructor(game) {
       this.game = game;
       this.collisionX = Math.random() * this.game.width;
-      this.collisionY = Math.random() * this.game.width;
-      this.collisionRadius = 50;
+      this.collisionY = Math.random() * this.game.height;
+      this.collisionRadius = 20;
     }
 
     draw(context) {
@@ -111,7 +111,7 @@ window.addEventListener("load", function () {
       this.height = this.canvas.height;
       //create a player automatically when we create a game
       this.player = new Player(this);
-      this.numberOfObstacles = 5;
+      this.numberOfObstacles = 10;
       this.obstacles = [];
       this.mouse = {
         x: this.width * 0.5,
@@ -147,10 +147,43 @@ window.addEventListener("load", function () {
     }
 
     init() {
-      //populae the array of obstacles
-      for (let i = 0; i < this.numberOfObstacles; i++) {
-        //push inserts a new item to the array
-        this.obstacles.push(new Obstacle(this));
+      //render the obstacles
+      let attempts = 0;
+      while (
+        attempts < this.numberOfObstacles * 4 &&
+        this.obstacles.length < this.numberOfObstacles
+      ) {
+        /*We don't want any overlapping obstacles. let's use brute force to check for empty spaces. That means we're gonna try until we find an empty space*/
+        const newObstacle = new Obstacle(this);
+        //create the first obstacle
+        if (!this.obstacles.length) {
+          this.obstacles.push(newObstacle);
+        } else {
+          //for the others, we need to check for empty spaces
+          let emptySpace = true;
+          this.obstacles.forEach((obstacle) => {
+            //check if the space has been taken already
+            const distanceY = Math.abs(
+              newObstacle.collisionX - obstacle.collisionX
+            );
+            const distanceX = Math.abs(
+              newObstacle.collisionY - obstacle.collisionY
+            );
+            //get the distance between the new obstacle and an obstacle that is already in the array.
+            const distanceXY = Math.hypot(distanceY, distanceX);
+
+            //check the distance between the new obstacle and an obstacle that is already in the array is far enough if it's not, the space is not empty
+            if (distanceXY < obstacle.collisionRadius * 2) {
+              emptySpace = false;
+            }
+          });
+          //if it's ok, push the new obstacle into the array
+          if (emptySpace) {
+            this.obstacles.push(newObstacle);
+          }
+          attempts++;
+        }
+        console.log(this.obstacles);
       }
     }
   }
