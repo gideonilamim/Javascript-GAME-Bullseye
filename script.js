@@ -95,10 +95,23 @@ window.addEventListener("load", function () {
       this.image = document.getElementById("obstacles");
       this.spriteWidth = 250;
       this.spriteHeight = 250;
+
+      //random sprite sheet
+      /*the obstacle sprite sheet contains 12 different obstacles. 
+        4 X 3
+      we need to randomly pick one of them each time we render an obstacle.
+      */
+
+      this.cropAtX = Math.round(Math.random() * 3) * 250;
+      this.cropAtY = Math.round(Math.random() * 2) * 250;
       this.spriteX = this.collisionX - 0.5 * this.spriteWidth;
       this.spriteY = this.collisionY - this.spriteWidth + this.collisionRadius;
-      this.cropAtX = 0;
-      this.cropAtY = 0;
+
+      console.log(this.cropAtX);
+      console.log(this.cropAtY);
+
+      //random sprite sheet
+      //the obstacle sprite sheet contains 12 different obstacles. we need to randomly pick one of them each time we render an obstacle.
     }
 
     draw(context) {
@@ -108,15 +121,18 @@ window.addEventListener("load", function () {
       to crop the image to get only the obstacle we need, we need to add 4 arguments:
         the start x and y
         the end x and y
- 
+
+
+      drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
       
+      https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/drawImage
       */
       context.drawImage(
         this.image,
         this.cropAtX,
         this.cropAtY,
-        this.cropAtX + this.spriteWidth,
-        this.cropAtY + this.spriteHeight,
+        this.spriteWidth,
+        this.spriteHeight,
         this.spriteX,
         this.spriteY,
         this.spriteWidth,
@@ -138,6 +154,16 @@ window.addEventListener("load", function () {
       context.fill();
       context.restore();
       context.stroke();
+    }
+
+    obstacleType() {
+      const column = this.cropAtX / this.spriteWidth + 1;
+      const row = this.cropAtY / this.spriteHeight;
+      const obstacleType = row * 4 + column;
+
+      console.log("row: " + row);
+      console.log("column " + column);
+      return obstacleType;
     }
   }
 
@@ -222,9 +248,9 @@ window.addEventListener("load", function () {
           if (emptySpace) {
             this.obstacles.push(newObstacle);
           }
+
           attempts++;
         }
-        console.log(this.obstacles);
       }
     }
   }
