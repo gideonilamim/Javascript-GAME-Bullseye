@@ -78,9 +78,9 @@ window.addEventListener("load", function () {
   class Obstacle {
     constructor(game) {
       this.game = game;
-      this.collisionX = Math.random() * this.game.width;
-      this.collisionY = Math.random() * this.game.height;
       this.collisionRadius = 40;
+      this.collisionX = Math.random() * this.game.width - this.collisionRadius;
+      this.collisionY = Math.random() * this.game.height - this.collisionRadius;
       //spriteSheet
       this.image = document.getElementById("obstacles");
       this.spriteWidth = 250;
@@ -140,7 +140,7 @@ window.addEventListener("load", function () {
       this.height = this.canvas.height;
       //create a player automatically when we create a game
       this.player = new Player(this);
-      this.numberOfObstacles = 1;
+      this.numberOfObstacles = 10;
       this.obstacles = [];
       this.mouse = {
         x: this.width * 0.5,
@@ -200,9 +200,9 @@ window.addEventListener("load", function () {
             );
             //get the distance between the new obstacle and an obstacle that is already in the array.
             const distanceXY = Math.hypot(distanceY, distanceX);
-
+            const allowedDistance = obstacle.collisionRadius * 2 + 100;
             //check the distance between the new obstacle and an obstacle that is already in the array is far enough if it's not, the space is not empty
-            if (distanceXY < obstacle.collisionRadius * 2) {
+            if (distanceXY < allowedDistance) {
               emptySpace = false;
             }
           });
