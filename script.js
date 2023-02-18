@@ -26,7 +26,7 @@ window.addEventListener("load", function () {
       this.distanceY = 0;
       this.speedX = 0;
       this.speedY = 0;
-      this.speedModifier = 10;
+      this.speedModifier = 5;
     }
 
     //this method will draw the player
