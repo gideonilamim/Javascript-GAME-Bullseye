@@ -102,7 +102,7 @@ window.addEventListener("load", function () {
       this.game = game;
       this.collisionRadius = 40;
 
-      //obstacle frame
+      //obstacle frame inside the canvas
       this.frameXstart = this.collisionRadius;
       this.frameYstart = 300; //top margin
       this.frameXend = this.game.width - this.frameXstart * 2;
@@ -117,15 +117,20 @@ window.addEventListener("load", function () {
       this.image = document.getElementById("obstacles");
       this.spriteWidth = 250;
       this.spriteHeight = 250;
+      this.spriteSheetWidth = this.image.naturalWidth;
+      this.spriteSheetHeight = this.image.naturalHeight;
+      this.columns = this.spriteSheetWidth / this.spriteWidth;
+      this.rows = this.spriteSheetHeight / this.spriteHeight;
 
       //random sprite sheet
       /*the obstacle sprite sheet contains 12 different obstacles. 
         4 X 3
+        but I can also add more obstacle types
       we need to randomly pick one of them each time we render an obstacle.
       */
 
-      this.cropAtX = Math.floor(Math.random() * 4) * 250;
-      this.cropAtY = Math.floor(Math.random() * 3) * 250;
+      this.cropAtX = Math.floor(Math.random() * this.columns) * 250;
+      this.cropAtY = Math.floor(Math.random() * this.rows) * 250;
       this.spriteX = this.collisionX - 0.5 * this.spriteWidth;
       this.spriteY = this.collisionY - this.spriteWidth + this.collisionRadius;
 
