@@ -80,10 +80,39 @@ window.addEventListener("load", function () {
       this.game = game;
       this.collisionX = Math.random() * this.game.width;
       this.collisionY = Math.random() * this.game.height;
-      this.collisionRadius = 20;
+      this.collisionRadius = 40;
+      //spriteSheet
+      this.image = document.getElementById("obstacles");
+      this.spriteWidth = 250;
+      this.spriteHeight = 250;
+      this.spriteX = this.collisionX - 0.5 * this.spriteWidth;
+      this.spriteY = this.collisionY - this.spriteWidth + this.collisionRadius;
+      this.cropAtX = 0;
+      this.cropAtY = 0;
     }
 
     draw(context) {
+      /*drawImage needs at least 3 arguments: the image, the x coordinate and the y coordinate
+      we can also add the width and the height
+
+      to crop the image to get only the obstacle we need, we need to add 4 arguments:
+        the start x and y
+        the end x and y
+ 
+      
+      */
+      context.drawImage(
+        this.image,
+        this.cropAtX,
+        this.cropAtY,
+        this.cropAtX + this.spriteWidth,
+        this.cropAtY + this.spriteHeight,
+        this.spriteX,
+        this.spriteY,
+        this.spriteWidth,
+        this.spriteHeight
+      );
+
       //beginPath tells Javascript to begin drawing a new shape
       context.beginPath();
       //arc needs 5 arguments: x, y, radius, start angle(rad), end angle
@@ -111,7 +140,7 @@ window.addEventListener("load", function () {
       this.height = this.canvas.height;
       //create a player automatically when we create a game
       this.player = new Player(this);
-      this.numberOfObstacles = 10;
+      this.numberOfObstacles = 1;
       this.obstacles = [];
       this.mouse = {
         x: this.width * 0.5,
