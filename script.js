@@ -75,9 +75,7 @@ window.addEventListener("load", function () {
 
       //as the player moves, we need to check for collision with the obstacles
       this.game.obstacles.forEach((obstacle) => {
-        //const collision = this.game.checkCollision(this, obstacle).collision;
-
-        //let's use dobject deestructuring to get the values from  checkCollision()
+        //let's use object deestructuring to get the values from  checkCollision()
         /*basically here, I'm asking javascript to create 5 variables
         
           const obj = { a: 1, b: 2 };
@@ -91,7 +89,22 @@ window.addEventListener("load", function () {
           this.game.checkCollision(this, obstacle);
 
         if (collision) {
-          console.log("collision detected");
+          /*to avoid the player to move into the obstacle, 
+          the player will be always pushed away from the obstacle by 1 pixel
+
+          collisionX and collisionY are the players coordinates at X and Y
+
+          unit_x will cause to move the player left or right whether it's negative or positive
+          unit_y will cause to move the player up or down whether it's negative or positive
+
+          sumOfRadii makes sure the player and obstacle don't overlap
+        
+          */
+          const unit_x = distanceX / distanceXY;
+          const unit_y = distanceY / distanceXY;
+          console.log(unit_x, unit_y);
+          this.collisionX = obstacle.collisionX + (sumOfRadii + 1) * unit_x;
+          this.collisionY = obstacle.collisionY + (sumOfRadii + 1) * unit_y;
         }
       });
     }
@@ -122,7 +135,7 @@ window.addEventListener("load", function () {
       this.columns = this.spriteSheetWidth / this.spriteWidth;
       this.rows = this.spriteSheetHeight / this.spriteHeight;
 
-      //random sprite sheet
+      //random sprite sheet obstacle
       /*the obstacle sprite sheet contains 12 different obstacles. 
         4 X 3
         but I can also add more obstacle types
@@ -229,14 +242,14 @@ window.addEventListener("load", function () {
     //collision detector
     checkCollision(circleA, circleB, bufferDistance) {
       //for this methiod to be reusable, all objects must have the same properties
-      const distanceY = Math.abs(circleA.collisionX - circleB.collisionX);
-      const distanceX = Math.abs(circleA.collisionY - circleB.collisionY);
+      const distanceX = circleA.collisionX - circleB.collisionX;
+      const distanceY = circleA.collisionY - circleB.collisionY;
       //get the distance between the circleA and circleB.
       const distanceXY = Math.hypot(distanceY, distanceX);
       //check for collision
       const sumOfRadii = circleA.collisionRadius + circleB.collisionRadius;
       const minDistance = sumOfRadii + (bufferDistance ? bufferDistance : 0);
-      const collision = distanceXY - minDistance <= 0;
+      const collision = distanceXY - minDistance < 0;
 
       return {
         collision: collision,
