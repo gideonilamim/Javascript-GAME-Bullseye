@@ -72,6 +72,28 @@ window.addEventListener("load", function () {
       //create player movement
       this.collisionX += this.speedX * this.speedModifier;
       this.collisionY += this.speedY * this.speedModifier;
+
+      //as the player moves, we need to check for collision with the obstacles
+      this.game.obstacles.forEach((obstacle) => {
+        //const collision = this.game.checkCollision(this, obstacle).collision;
+
+        //let's use dobject deestructuring to get the values from  checkCollision()
+        /*basically here, I'm asking javascript to create 5 variables
+        
+          const obj = { a: 1, b: 2 };
+          const { a, b } = obj;
+
+           is equivalent to:
+           const a = obj.a;
+           const b = obj.b;
+        */
+        let { collision, sumOfRadii, distanceXY, distanceX, distanceY } =
+          this.game.checkCollision(this, obstacle);
+
+        if (collision) {
+          console.log("collision detected");
+        }
+      });
     }
   }
 
@@ -173,6 +195,7 @@ window.addEventListener("load", function () {
       this.player = new Player(this);
       this.numberOfObstacles = 10;
       this.obstacles = [];
+      this.spaceBetweenObstacles = 100;
       this.mouse = {
         x: this.width * 0.5,
         y: this.height * 0.5,
@@ -196,6 +219,27 @@ window.addEventListener("load", function () {
           this.mouse.y = e.offsetY;
         }
       });
+    }
+
+    //collision detector
+    checkCollision(circleA, circleB, bufferDistance) {
+      //for this methiod to be reusable, all objects must have the same properties
+      const distanceY = Math.abs(circleA.collisionX - circleB.collisionX);
+      const distanceX = Math.abs(circleA.collisionY - circleB.collisionY);
+      //get the distance between the circleA and circleB.
+      const distanceXY = Math.hypot(distanceY, distanceX);
+      //check for collision
+      const sumOfRadii = circleA.collisionRadius + circleB.collisionRadius;
+      const minDistance = sumOfRadii + (bufferDistance ? bufferDistance : 0);
+      const collision = distanceXY - minDistance <= 0;
+
+      return {
+        collision: collision,
+        sumOfRadii: sumOfRadii,
+        distanceXY: distanceXY,
+        distanceX: distanceX,
+        distanceY: distanceY,
+      };
     }
 
     //the Render method will draw the player
@@ -223,20 +267,17 @@ window.addEventListener("load", function () {
           let emptySpace = true;
           let duplicateType = false;
           this.obstacles.forEach((obstacle) => {
-            //check if the space has been taken already
-            const distanceY = Math.abs(
-              newObstacle.collisionX - obstacle.collisionX
+            /*check if the space has been taken already
+            get the distance between the new obstacle and an obstacle that is already in the array.
+            check the distance between the new obstacle and an obstacle that is already in the array is far enough if it's not, the space is not empty
+            */
+            const { collision } = this.checkCollision(
+              obstacle,
+              newObstacle,
+              this.spaceBetweenObstacles
             );
-            const distanceX = Math.abs(
-              newObstacle.collisionY - obstacle.collisionY
-            );
-            //get the distance between the new obstacle and an obstacle that is already in the array.
-            const distanceXY = Math.hypot(distanceY, distanceX);
-            const distanceBuffer = 100;
-            const allowedDistance =
-              obstacle.collisionRadius * 2 + distanceBuffer;
-            //check the distance between the new obstacle and an obstacle that is already in the array is far enough if it's not, the space is not empty
-            if (distanceXY < allowedDistance) {
+
+            if (collision) {
               emptySpace = false;
             }
 
