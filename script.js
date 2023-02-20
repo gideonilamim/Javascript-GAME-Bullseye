@@ -16,7 +16,6 @@ window.addEventListener("load", function () {
     constructor(game) {
       //transform the parameter into a property of this class.
       this.game = game;
-      console.log(this);
 
       //coordinates for the collision circle
       this.collisionX = this.game.width * 0.5; //initial position
@@ -217,7 +216,6 @@ window.addEventListener("load", function () {
     constructor(game) {
       this.game = game;
       this.collisionRadius = 40;
-      this.displayCollisionCircle = false;
 
       //obstacle frame inside the canvas
       this.frameXstart = this.collisionRadius;
@@ -280,23 +278,7 @@ window.addEventListener("load", function () {
         this.spriteWidth,
         this.spriteHeight
       );
-      if (this.displayCollisionCircle) {
-        //beginPath tells Javascript to begin drawing a new shape
-        context.beginPath();
-        //arc needs 5 arguments: x, y, radius, start angle(rad), end angle
-        context.arc(
-          this.collisionX,
-          this.collisionY,
-          this.collisionRadius,
-          0,
-          Math.PI * 2
-        );
-        context.save();
-        context.globalAlpha = 0.5;
-        context.fill();
-        context.restore();
-        context.stroke();
-      }
+      this.game.drawCollisionCircle(this, context);
     }
 
     obstacleType() {
@@ -336,25 +318,7 @@ window.addEventListener("load", function () {
     draw(context) {
       //draw image
       context.drawImage(this.image, this.spriteX, this.spriteY);
-
-      //draw collision circle
-      if (this.game.displayCollisionCircle) {
-        context.beginPath();
-        console.log(this.collisionX, this.collisionY);
-        context.arc(
-          this.collisionX,
-          this.collisionY,
-          this.collisionRadius,
-          0,
-          2 * Math.PI
-        );
-
-        context.save();
-        context.globalAlpha = 0.5;
-        context.fill();
-        context.restore();
-        context.stroke();
-      }
+      this.game.drawCollisionCircle(this, context);
     }
   }
 
@@ -365,8 +329,11 @@ window.addEventListener("load", function () {
       this.canvas = canvas;
       this.width = this.canvas.width;
       this.height = this.canvas.height;
+
       //create a player automatically when we create a game
       this.player = new Player(this);
+
+      this.displayCollisionCircle = true;
 
       //FPS correction
       this.fps = 120;
@@ -429,6 +396,26 @@ window.addEventListener("load", function () {
       };
     }
 
+    drawCollisionCircle(object, context) {
+      //draw collision circle
+      if (this.displayCollisionCircle) {
+        context.beginPath();
+        context.arc(
+          object.collisionX,
+          object.collisionY,
+          object.collisionRadius,
+          0,
+          2 * Math.PI
+        );
+
+        context.save();
+        context.globalAlpha = 0.5;
+        context.fill();
+        context.restore();
+        context.stroke();
+      }
+    }
+
     //the Render method will draw the player
     render(context, deltaTime) {
       //it will only rerender the game when enough time has past
@@ -454,7 +441,6 @@ window.addEventListener("load", function () {
         this.player.update();
         this.obstacles.forEach((obstacle) => obstacle.draw(context));
         //render the eggs
-        console.log(this.eggs);
         this.eggs.draw(context);
 
         //reset the timer
