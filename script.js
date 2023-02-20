@@ -309,6 +309,55 @@ window.addEventListener("load", function () {
     }
   }
 
+  class Egg {
+    constructor(game) {
+      this.game = game;
+      this.collisionRadius = 45;
+
+      //frame inside the canvas
+      this.frameXstart = this.collisionRadius;
+      this.frameYstart = 300; //top margin
+      this.frameXend = this.game.width - this.frameXstart * 2;
+      this.frameYend =
+        this.game.height - this.frameYstart - this.collisionRadius;
+
+      //collision circle random coordinates inside the obstacle rendering frame
+      this.collisionX = this.frameXstart + Math.random() * this.frameXend;
+      this.collisionY = this.frameYstart + Math.random() * this.frameYend;
+
+      //Egg image and position
+      this.image = document.getElementById("egg");
+      this.spriteWidth = 110;
+      this.spriteHeight = 135;
+      this.spriteX = this.collisionX - this.spriteWidth * 0.5;
+      this.spriteY = this.collisionY - this.spriteHeight + this.collisionRadius;
+    }
+
+    draw(context) {
+      //draw image
+      context.drawImage(this.image, this.spriteX, this.spriteY);
+
+      //draw collision circle
+      if (this.game.displayCollisionCircle) {
+        context.beginPath();
+        console.log(this.collisionX, this.collisionY);
+        context.arc(
+          this.collisionX,
+          this.collisionY,
+          this.collisionRadius,
+          0,
+          2 * Math.PI
+        );
+
+        context.save();
+        context.globalAlpha = 0.5;
+        context.fill();
+        context.restore();
+        context.stroke();
+      }
+    }
+  }
+
   //the class Game will handle all the game logics
   class Game {
     constructor(canvas) {
@@ -328,6 +377,10 @@ window.addEventListener("load", function () {
       this.numberOfObstacles = 10;
       this.obstacles = [];
       this.spaceBetweenObstacles = 100;
+
+      //eggs
+      //render the eggs
+      this.eggs = new Egg(this);
 
       //mouse position
       this.mouse = {
@@ -400,6 +453,9 @@ window.addEventListener("load", function () {
         this.player.draw(context);
         this.player.update();
         this.obstacles.forEach((obstacle) => obstacle.draw(context));
+        //render the eggs
+        console.log(this.eggs);
+        this.eggs.draw(context);
 
         //reset the timer
         this.timer = 0;
