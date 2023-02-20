@@ -16,6 +16,7 @@ window.addEventListener("load", function () {
     constructor(game) {
       //transform the parameter into a property of this class.
       this.game = game;
+
       //coordinates for the collision circle
       this.collisionX = this.game.width * 0.5;
       this.collisionY = this.game.height * 0.5;
@@ -27,10 +28,55 @@ window.addEventListener("load", function () {
       this.speedX = 0;
       this.speedY = 0;
       this.speedModifier = 5;
+
+      //spriteSheet
+      this.image = document.getElementById("bull");
+      this.spriteWidth = 255;
+      this.spriteHeight = 255;
+      this.spriteSheetWidth = this.image.naturalWidth; // size of the entire sprite sheet X
+      this.spriteSheetHeight = this.image.naturalHeight; // size of the entire sprite sheet Y
+      this.columns = this.spriteSheetWidth / this.spriteWidth;
+      this.rows = this.spriteSheetHeight / this.spriteHeight;
+      //animate the player sprite sheet
+      this.column = 0;
+      //image crop selector
+      this.cropAtX = this.column * this.spriteWidth;
+      this.cropAtY = 0;
+      //image position
+      this.spriteX;
+      this.spriteY;
+      this.negative = false;
+      this.angleOfTravel = 180;
     }
 
     //this method will draw the player
     draw(context) {
+      /*drawImage needs at least 3 arguments: the image, the x coordinate and the y coordinate
+      we can also add the width and the height
+
+      to crop the image to get only the obstacle we need, we need to add 4 arguments:
+        the start x and y
+        the end x and y
+
+
+      drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
+      
+      https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/drawImage
+      */
+      //image position
+
+      context.drawImage(
+        this.image,
+        this.cropAtX,
+        this.cropAtY,
+        this.spriteWidth,
+        this.spriteHeight,
+        this.spriteX,
+        this.spriteY,
+        this.spriteWidth,
+        this.spriteHeight
+      );
+
       //beginPath tells Javascript to begin drawing a new shape
       context.beginPath();
       //arc needs 5 arguments: x, y, radius, start angle(rad), end angle
@@ -54,6 +100,49 @@ window.addEventListener("load", function () {
       context.stroke();
     }
 
+    spriteSheetCropper() {
+      //finding the angle
+      const distanceX = this.game.mouse.x - this.collisionX;
+      const distanceY = this.game.mouse.y - this.collisionY;
+      const distanceXY = Math.hypot(distanceX, distanceY);
+      /* to find the angle we need a little bit of calculations
+      
+      S=O/H C=A/H T=O/A
+      the tangent is the relationship between the adjacent and the opposite sides of the triangle
+      the inverse tangent will give us the angle in radians
+
+      https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/atan
+      */
+
+      const sin = distanceX / distanceXY;
+      const cos = distanceY / distanceXY;
+      if (distanceXY) {
+        //sin greater than zero = angle between 0 180
+        if (sin < 0) {
+          this.angleOfTravel = Math.acos(cos) + Math.PI;
+        } else {
+          this.angleOfTravel = Math.acos(cos * -1);
+        }
+      }
+
+      //choose direction
+      const row = Math.floor((this.angleOfTravel * 9) / (2 * Math.PI));
+      this.cropAtY = row < 8 ? this.spriteHeight * row : 0;
+
+      //animate the image along its X axis
+      if (this.column > this.columns - 2) {
+        this.negative = true;
+      } else if (this.column <= 0) {
+        this.negative = false;
+      }
+      if (this.negative) {
+        this.column--;
+      } else {
+        this.column++;
+      }
+      this.cropAtX = this.column * 255;
+    }
+
     //update will cause the player to move
     update() {
       //set the player speed
@@ -68,10 +157,15 @@ window.addEventListener("load", function () {
         this.speedX = this.distanceX / this.speedModifier;
         this.speedY = this.distanceY / this.speedModifier;
       }
-
-      //create player movement
       this.collisionX += this.speedX * this.speedModifier;
       this.collisionY += this.speedY * this.speedModifier;
+
+      //sprite sheet animation
+      this.spriteSheetCropper();
+
+      //sprite image position
+      this.spriteX = this.collisionX - 0.5 * this.spriteWidth;
+      this.spriteY = this.collisionY - this.spriteWidth + this.collisionRadius;
 
       //as the player moves, we need to check for collision with the obstacles
       this.game.obstacles.forEach((obstacle) => {
@@ -102,7 +196,6 @@ window.addEventListener("load", function () {
           */
           const unit_x = distanceX / distanceXY;
           const unit_y = distanceY / distanceXY;
-          console.log(unit_x, unit_y);
           this.collisionX = obstacle.collisionX + (sumOfRadii + 1) * unit_x;
           this.collisionY = obstacle.collisionY + (sumOfRadii + 1) * unit_y;
         }
