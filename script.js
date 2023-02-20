@@ -16,11 +16,15 @@ window.addEventListener("load", function () {
     constructor(game) {
       //transform the parameter into a property of this class.
       this.game = game;
+      console.log(this);
 
       //coordinates for the collision circle
-      this.collisionX = this.game.width * 0.5;
-      this.collisionY = this.game.height * 0.5;
+      this.collisionX = this.game.width * 0.5; //initial position
+      this.collisionY = this.game.height * 0.5; //initial position
       this.collisionRadius = 30;
+
+      //player's movement upper limit
+      this.upperLimit = 270;
 
       //speed of the player
       this.distanceX = 0;
@@ -31,8 +35,9 @@ window.addEventListener("load", function () {
 
       //spriteSheet
       this.image = document.getElementById("bull");
+      this.image.style.zIndex = "990";
       this.spriteWidth = 255;
-      this.spriteHeight = 255;
+      this.spriteHeight = 256;
       this.spriteSheetWidth = this.image.naturalWidth; // size of the entire sprite sheet X
       this.spriteSheetHeight = this.image.naturalHeight; // size of the entire sprite sheet Y
       this.columns = this.spriteSheetWidth / this.spriteWidth;
@@ -157,13 +162,18 @@ window.addEventListener("load", function () {
         this.speedX = this.distanceX / this.speedModifier;
         this.speedY = this.distanceY / this.speedModifier;
       }
+
       this.collisionX += this.speedX * this.speedModifier;
-      this.collisionY += this.speedY * this.speedModifier;
+
+      if (this.collisionY > this.upperLimit || this.speedY > 0) {
+        this.collisionY += this.speedY * this.speedModifier;
+      }
+      //this.collisionY += this.speedY * this.speedModifier;
 
       //sprite sheet animation
       this.spriteSheetCropper();
 
-      //sprite image position
+      //sprite image position relative to the player
       this.spriteX = this.collisionX - 0.5 * this.spriteWidth;
       this.spriteY = this.collisionY - this.spriteWidth + this.collisionRadius;
 
@@ -207,6 +217,7 @@ window.addEventListener("load", function () {
     constructor(game) {
       this.game = game;
       this.collisionRadius = 40;
+      this.displayCollisionCircle = false;
 
       //obstacle frame inside the canvas
       this.frameXstart = this.collisionRadius;
@@ -221,6 +232,8 @@ window.addEventListener("load", function () {
 
       //spriteSheet
       this.image = document.getElementById("obstacles");
+      this.image.style.zIndex = "-100";
+
       this.spriteWidth = 250;
       this.spriteHeight = 250;
       this.spriteSheetWidth = this.image.naturalWidth;
@@ -267,22 +280,23 @@ window.addEventListener("load", function () {
         this.spriteWidth,
         this.spriteHeight
       );
-
-      //beginPath tells Javascript to begin drawing a new shape
-      context.beginPath();
-      //arc needs 5 arguments: x, y, radius, start angle(rad), end angle
-      context.arc(
-        this.collisionX,
-        this.collisionY,
-        this.collisionRadius,
-        0,
-        Math.PI * 2
-      );
-      context.save();
-      context.globalAlpha = 0.5;
-      context.fill();
-      context.restore();
-      context.stroke();
+      if (this.displayCollisionCircle) {
+        //beginPath tells Javascript to begin drawing a new shape
+        context.beginPath();
+        //arc needs 5 arguments: x, y, radius, start angle(rad), end angle
+        context.arc(
+          this.collisionX,
+          this.collisionY,
+          this.collisionRadius,
+          0,
+          Math.PI * 2
+        );
+        context.save();
+        context.globalAlpha = 0.5;
+        context.fill();
+        context.restore();
+        context.stroke();
+      }
     }
 
     obstacleType() {
@@ -304,9 +318,18 @@ window.addEventListener("load", function () {
       this.height = this.canvas.height;
       //create a player automatically when we create a game
       this.player = new Player(this);
+
+      //FPS correction
+      this.fps = 120;
+      this.timer = 0;
+      this.interval = 1000 / this.fps; //1000 milliseconds divided by 20 fps
+
+      //obstacle properties
       this.numberOfObstacles = 10;
       this.obstacles = [];
       this.spaceBetweenObstacles = 100;
+
+      //mouse position
       this.mouse = {
         x: this.width * 0.5,
         y: this.height * 0.5,
@@ -354,11 +377,34 @@ window.addEventListener("load", function () {
     }
 
     //the Render method will draw the player
-    render(context) {
-      //this method will be called over and over again by animate.
-      this.player.draw(context);
-      this.player.update();
-      this.obstacles.forEach((obstacle) => obstacle.draw(context));
+    render(context, deltaTime) {
+      //it will only rerender the game when enough time has past
+      if (this.timer > this.interval) {
+        /*comment - cleaRect
+    The CanvasRenderingContext2D.clearRect() method of the Canvas 2D API 
+    erases the pixels in a rectangular area by setting them to transparent black. 
+
+    Note: Be aware that clearRect() may cause unintended side effects 
+    if you're not using paths properly. Make sure to call beginPath() 
+    before starting to draw new items after calling clearRect(). 
+
+    Syntax
+
+    clearRect(x, y, width, height)
+
+    (x, y, width, height) to create a rectangle
+    */
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        //this method will be called over and over again by animate.
+        this.player.draw(context);
+        this.player.update();
+        this.obstacles.forEach((obstacle) => obstacle.draw(context));
+
+        //reset the timer
+        this.timer = 0;
+      }
+      this.timer += deltaTime;
     }
 
     init() {
@@ -406,33 +452,21 @@ window.addEventListener("load", function () {
           attempts++;
         }
       }
-      console.log(this.obstacles);
     }
   }
 
   //instantiate the Game class
   const game = new Game(canvas);
   game.init();
-  console.log(game);
 
   // we need a loop to animate our game
-  function animate() {
-    /*comment - cleaRect
-    The CanvasRenderingContext2D.clearRect() method of the Canvas 2D API 
-    erases the pixels in a rectangular area by setting them to transparent black. 
+  let lastTime = 0;
+  function animate(timeStamp) {
+    //deltaTime will be used to make sure enough time has past before the game rerender itself. that preventes the game from being too fast
+    const deltaTime = timeStamp - lastTime;
+    lastTime = timeStamp;
 
-    Note: Be aware that clearRect() may cause unintended side effects 
-    if you're not using paths properly. Make sure to call beginPath() 
-    before starting to draw new items after calling clearRect(). 
-
-    Syntax
-
-    clearRect(x, y, width, height)
-
-    (x, y, width, height) to create a rectangle
-    */
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    game.render(ctx);
+    game.render(ctx, deltaTime);
     /*Comment - requestAnimationFrame
     requestAnimationFrame(function)  this method will tell the browser to repeat the function to create an animation.
     here, it's reapeating the parent function*/
@@ -440,5 +474,5 @@ window.addEventListener("load", function () {
   }
 
   //call animate to start the animation
-  animate();
+  animate(0);
 });
