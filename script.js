@@ -3,6 +3,11 @@ window.addEventListener("load", function () {
   const canvas = document.getElementById("canvas1");
   const ctx = canvas.getContext("2d");
 
+  //FPS correction
+  const fps = 120;
+  let timer = 0;
+  const interval = 1000 / fps; //1000 milliseconds divided by 20 fps
+
   //set canvas size
   canvas.width = 1280;
   canvas.height = 720;
@@ -333,21 +338,20 @@ window.addEventListener("load", function () {
       //create a player automatically when we create a game
       this.player = new Player(this);
 
-      this.displayCollisionCircle = true;
-
-      //FPS correction
-      this.fps = 120;
-      this.timer = 0;
-      this.interval = 1000 / this.fps; //1000 milliseconds divided by 20 fps
+      this.displayCollisionCircle = false;
 
       //obstacle properties
-      this.numberOfObstacles = 10;
+      this.numberOfObstacles = 1;
       this.obstacles = [];
       this.spaceBetweenObstacles = 100;
 
       //eggs
-      //render the eggs
       this.eggs = new Egg(this);
+      this.eggs = [];
+      this.maxNumberOfEggs = 10;
+      this.eggSpawnTimer = 0;
+      this.eggSpawnInterval = 1;
+      this.eggIncubationTime = 200;
 
       //mouse position
       this.mouse = {
@@ -417,37 +421,45 @@ window.addEventListener("load", function () {
     }
 
     //the Render method will draw the player
-    render(context, deltaTime) {
+    render(context) {
       //it will only rerender the game when enough time has past
-      if (this.timer > this.interval) {
-        /*comment - cleaRect
-    The CanvasRenderingContext2D.clearRect() method of the Canvas 2D API 
-    erases the pixels in a rectangular area by setting them to transparent black. 
 
-    Note: Be aware that clearRect() may cause unintended side effects 
-    if you're not using paths properly. Make sure to call beginPath() 
-    before starting to draw new items after calling clearRect(). 
+      //this method will be called over and over again by animate.
+      this.player.draw(context);
+      this.player.update();
+      this.obstacles.forEach((obstacle) => obstacle.draw(context));
 
-    Syntax
-
-    clearRect(x, y, width, height)
-
-    (x, y, width, height) to create a rectangle
-    */
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        //this method will be called over and over again by animate.
-        this.player.draw(context);
-        this.player.update();
-        this.obstacles.forEach((obstacle) => obstacle.draw(context));
-        //render the eggs
-        this.eggs.draw(context);
-
-        //reset the timer
-        this.timer = 0;
+      if (this.eggSpawnTimer > this.eggSpawnInterval) {
+        this.addEggs();
+        this.eggSpawnTimer = 0;
       }
-      this.timer += deltaTime;
+      this.eggs.forEach((egg) => egg.draw(context));
+      this.eggSpawnTimer++;
     }
+
+    addEggs() {
+      const newEgg = new Egg(this);
+      let collisionWithObstacle = false;
+      let collisionWithEgg = false;
+
+      this.obstacles.forEach((obstacle) => {
+        if (this.checkCollision(obstacle, newEgg).collision) {
+          collisionWithObstacle = true;
+        }
+      });
+
+      this.eggs.forEach((egg) => {
+        if (this.checkCollision(egg, newEgg).collision) {
+          collisionWithEgg = true;
+        }
+      });
+      if (!collisionWithObstacle && !collisionWithEgg) {
+        this.eggs.push(newEgg);
+        console.log(this.eggs);
+      }
+    }
+
+    hatchEgg() {}
 
     init() {
       //render the obstacles
@@ -508,7 +520,32 @@ window.addEventListener("load", function () {
     const deltaTime = timeStamp - lastTime;
     lastTime = timeStamp;
 
-    game.render(ctx, deltaTime);
+    console.log(timer > interval);
+    if (timer > interval) {
+      /*comment - cleaRect
+  The CanvasRenderingContext2D.clearRect() method of the Canvas 2D API 
+  erases the pixels in a rectangular area by setting them to transparent black. 
+
+  Note: Be aware that clearRect() may cause unintended side effects 
+  if you're not using paths properly. Make sure to call beginPath() 
+  before starting to draw new items after calling clearRect(). 
+
+  Syntax
+
+  clearRect(x, y, width, height)
+
+  (x, y, width, height) to create a rectangle
+  */
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      //render player, obstacles, eggs, etc...
+      game.render(ctx);
+
+      //reset the timer
+      timer = 0;
+    }
+    timer += deltaTime;
+
     /*Comment - requestAnimationFrame
     requestAnimationFrame(function)  this method will tell the browser to repeat the function to create an animation.
     here, it's reapeating the parent function*/
