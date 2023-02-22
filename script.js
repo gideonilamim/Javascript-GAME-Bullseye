@@ -303,8 +303,8 @@ window.addEventListener("load", function () {
 
       //frame inside the canvas
       this.frameXstart = this.collisionRadius;
-      this.frameYstart = 300; //top margin
-      this.frameXend = this.game.width - this.frameXstart * 2;
+      this.frameYstart = 300; //top margin for the eggs
+      this.frameXend = this.game.width - this.collisionRadius;
       this.frameYend =
         this.game.height - this.frameYstart - this.collisionRadius;
 
@@ -321,9 +321,83 @@ window.addEventListener("load", function () {
     }
 
     draw(context) {
+      // update the position
+      this.spriteX = this.collisionX - this.spriteWidth * 0.5;
+      this.spriteY = this.collisionY - this.spriteHeight + this.collisionRadius;
       //draw image
       context.drawImage(this.image, this.spriteX, this.spriteY);
       this.game.drawCollisionCircle(this, context);
+    }
+
+    update() {
+      //to help us, we will create an array to contain all the objects that the egg may collide with.
+      // the spread operator (...) will help us to do that
+      let collisionObjects = [
+        this.game.player,
+        ...this.game.eggs,
+        ...this.game.obstacles,
+      ];
+      collisionObjects.forEach((object) => {
+        let { collision, sumOfRadii, distanceXY, distanceX, distanceY } =
+          this.game.checkCollision(object, this);
+        if (collision && object !== this) {
+          const unit_x = distanceX / distanceXY;
+          const unit_y = distanceY / distanceXY;
+          if (
+            this.collisionX > this.collisionRadius &&
+            this.collisionX < this.frameXend
+          ) {
+            this.collisionX = object.collisionX - (sumOfRadii + 1) * unit_x;
+          }
+          if (
+            this.collisionY > this.frameYstart &&
+            this.collisionY < this.game.height
+          ) {
+            this.collisionY = object.collisionY - (sumOfRadii + 1) * unit_y;
+          }
+        }
+      });
+    }
+  }
+
+  class Larva {
+    constructor(game, egg) {
+      this.game = game;
+      this.egg = egg;
+      this.collisionRadius = 40;
+      this.speedModifier = 0.5;
+
+      //obstacle frame inside the canvas
+      this.frameXstart = this.collisionRadius;
+      this.frameYstart = 300; //top margin
+      this.frameXend = this.game.width - this.frameXstart * 2;
+      this.frameYend =
+        this.game.height - this.frameYstart - this.collisionRadius;
+
+      //the collision circle position will match that of the related egg. it will spawn where the eggs was.
+      this.collisionX = this.egg.collisionX;
+      this.collisionY = this.egg.collisionY;
+    }
+
+    draw(context) {
+      /*drawImage needs at least 3 arguments: the image, the x coordinate and the y coordinate
+      we can also add the width and the height
+
+      to crop the image to get only the obstacle we need, we need to add 4 arguments:
+        the start x and y
+        the end x and y
+
+
+      drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
+      
+      https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/drawImage
+      */
+
+      this.game.drawCollisionCircle(this, context);
+    }
+
+    fleeToSafety() {
+      this.collisionY = this.collisionY - this.speedModifier;
     }
   }
 
@@ -338,10 +412,10 @@ window.addEventListener("load", function () {
       //create a player automatically when we create a game
       this.player = new Player(this);
 
-      this.displayCollisionCircle = false;
+      this.displayCollisionCircle = true;
 
       //obstacle properties
-      this.numberOfObstacles = 1;
+      this.numberOfObstacles = 10;
       this.obstacles = [];
       this.spaceBetweenObstacles = 100;
 
@@ -349,9 +423,13 @@ window.addEventListener("load", function () {
       this.eggs = new Egg(this);
       this.eggs = [];
       this.maxNumberOfEggs = 10;
+      this.eggSpawnInterval = 100;
       this.eggSpawnTimer = 0;
-      this.eggSpawnInterval = 1;
-      this.eggIncubationTime = 200;
+      this.eggIncubationTime = 450;
+      this.eggIncubationTimer = 0;
+
+      //larvas
+      this.larvas = [];
 
       //mouse position
       this.mouse = {
@@ -422,19 +500,41 @@ window.addEventListener("load", function () {
 
     //the Render method will draw the player
     render(context) {
-      //it will only rerender the game when enough time has past
-
       //this method will be called over and over again by animate.
       this.player.draw(context);
       this.player.update();
       this.obstacles.forEach((obstacle) => obstacle.draw(context));
 
+      //add the eggs
       if (this.eggSpawnTimer > this.eggSpawnInterval) {
-        this.addEggs();
+        if (this.eggs.length < this.maxNumberOfEggs) {
+          this.addEggs();
+        }
         this.eggSpawnTimer = 0;
       }
-      this.eggs.forEach((egg) => egg.draw(context));
+
+      //hatch the eggs
+      if (this.eggIncubationTimer > this.eggIncubationTime) {
+        if (this.eggs[0]) {
+          this.hatchEgg(this.eggs[0]);
+        }
+        this.eggs.shift();
+        this.eggIncubationTimer = 0;
+      }
+
+      //render the eggs
+      this.eggs.forEach((egg) => {
+        egg.draw(context);
+        egg.update();
+      });
       this.eggSpawnTimer++;
+      this.eggIncubationTimer++;
+
+      //render the larvas
+      this.larvas.forEach((larva) => {
+        larva.draw(context);
+        larva.fleeToSafety();
+      });
     }
 
     addEggs() {
@@ -455,11 +555,13 @@ window.addEventListener("load", function () {
       });
       if (!collisionWithObstacle && !collisionWithEgg) {
         this.eggs.push(newEgg);
-        console.log(this.eggs);
       }
     }
 
-    hatchEgg() {}
+    hatchEgg(egg) {
+      const newLarva = new Larva(this, egg);
+      this.larvas.push(newLarva);
+    }
 
     init() {
       //render the obstacles
@@ -520,7 +622,6 @@ window.addEventListener("load", function () {
     const deltaTime = timeStamp - lastTime;
     lastTime = timeStamp;
 
-    console.log(timer > interval);
     if (timer > interval) {
       /*comment - cleaRect
   The CanvasRenderingContext2D.clearRect() method of the Canvas 2D API 
