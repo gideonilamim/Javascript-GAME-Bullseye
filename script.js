@@ -360,6 +360,34 @@ window.addEventListener("load", function () {
     }
   }
 
+  class Enemy {
+    constructor(game) {
+      this.game = game;
+      this.collisionRadius = 45;
+
+      //frame inside the canvas
+      this.frameXstart = this.collisionRadius;
+      this.frameYstart = 300; //top margin for the eggs
+      this.frameXend = this.game.width - this.collisionRadius;
+      this.frameYend =
+        this.game.height - this.frameYstart - this.collisionRadius;
+
+      //collision circle random coordinates inside the obstacle rendering frame
+      this.collisionX = this.frameXstart + Math.random() * this.frameXend;
+      this.collisionY = this.frameYstart + Math.random() * this.frameYend;
+    }
+
+    draw(context) {
+      // update the position
+      this.spriteX = this.collisionX - this.spriteWidth * 0.5;
+      this.spriteY = this.collisionY - this.spriteHeight + this.collisionRadius;
+
+      this.game.drawCollisionCircle(this, context);
+    }
+
+    update() {}
+  }
+
   class Larva {
     constructor(game, egg) {
       this.game = game;
