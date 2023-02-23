@@ -314,8 +314,8 @@ window.addEventListener("load", function () {
 
       //Egg image and position
       this.image = document.getElementById("egg");
-      this.spriteWidth = 110;
-      this.spriteHeight = 135;
+      this.spriteWidth = this.image.naturalWidth;
+      this.spriteHeight = this.image.naturalHeight;
       this.spriteX = this.collisionX - this.spriteWidth * 0.5;
       this.spriteY = this.collisionY - this.spriteHeight + this.collisionRadius;
     }
@@ -367,7 +367,7 @@ window.addEventListener("load", function () {
 
       //frame inside the canvas
       this.frameXstart = this.collisionRadius;
-      this.frameYstart = 300; //top margin for the eggs
+      this.frameYstart = 300; //top margin for the enemies
       this.frameXend = this.game.width - this.collisionRadius;
       this.frameYend =
         this.game.height - this.frameYstart - this.collisionRadius;
@@ -375,6 +375,11 @@ window.addEventListener("load", function () {
       //collision circle random coordinates inside the obstacle rendering frame
       this.collisionX = this.frameXstart + Math.random() * this.frameXend;
       this.collisionY = this.frameYstart + Math.random() * this.frameYend;
+
+      //enemies sprite sheet
+      this.image = document.getElementById("toad");
+      this.spriteWidth = this.image.naturalWidth;
+      this.spriteHeight = this.image.naturalHeight;
     }
 
     draw(context) {
@@ -382,6 +387,19 @@ window.addEventListener("load", function () {
       this.spriteX = this.collisionX - this.spriteWidth * 0.5;
       this.spriteY = this.collisionY - this.spriteHeight + this.collisionRadius;
 
+      /*drawImage needs at least 3 arguments: the image, the x coordinate and the y coordinate
+      we can also add the width and the height
+
+      to crop the image to get only the obstacle we need, we need to add 4 arguments:
+        the start x and y
+        the end x and y
+
+
+      drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
+      
+      https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/drawImage
+      */
+      context.drawImage(this.image, this.spriteX, this.spriteY);
       this.game.drawCollisionCircle(this, context);
     }
 
@@ -443,7 +461,7 @@ window.addEventListener("load", function () {
       //create a player automatically when we create a game
       this.player = new Player(this);
 
-      this.displayCollisionCircle = false;
+      this.displayCollisionCircle = true;
 
       //obstacle properties
       this.numberOfObstacles = 10;
@@ -458,6 +476,10 @@ window.addEventListener("load", function () {
       this.eggSpawnTimer = 0;
       this.eggIncubationTime = 600;
       this.eggIncubationTimer = 0;
+
+      //Enemies
+      this.enemies = [];
+      this.maxNumberOfEnemies = 5;
 
       //larvas
       this.larvas = [];
@@ -535,7 +557,13 @@ window.addEventListener("load", function () {
       this.addEggs();
 
       //populate the objects array
-      this.objects = [this.player, ...this.obstacles, ...this.eggs];
+      this.objects = [
+        this.player,
+        ...this.obstacles,
+        ...this.eggs,
+        ...this.enemies,
+      ];
+      console.log(this.objects);
       let sortedObjects = this.objects.sort((a, b) => {
         return a.collisionY - b.collisionY;
       });
@@ -544,6 +572,9 @@ window.addEventListener("load", function () {
       });
 
       this.player.update();
+
+      //spawn enemies
+      this.spawnEnemies();
 
       //hatch the eggs
       if (this.eggIncubationTimer > this.eggIncubationTime) {
@@ -598,6 +629,14 @@ window.addEventListener("load", function () {
     hatchEgg(egg) {
       const newLarva = new Larva(this, egg);
       this.larvas.push(newLarva);
+    }
+
+    spawnEnemies() {
+      const newEnemy = new Enemy(this);
+
+      if (this.enemies.length <= this.maxNumberOfEnemies) {
+        this.enemies.push(newEnemy);
+      }
     }
 
     init() {
