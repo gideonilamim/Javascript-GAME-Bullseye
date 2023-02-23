@@ -172,7 +172,6 @@ window.addEventListener("load", function () {
       if (this.collisionY > this.upperLimit || this.speedY > 0) {
         this.collisionY += this.speedY * this.speedModifier;
       }
-      //this.collisionY += this.speedY * this.speedModifier;
 
       //sprite sheet animation
       this.spriteSheetCropper();
@@ -373,8 +372,13 @@ window.addEventListener("load", function () {
         this.game.height - this.frameYstart - this.collisionRadius;
 
       //collision circle random coordinates inside the obstacle rendering frame
-      this.collisionX = this.frameXstart + Math.random() * this.frameXend;
+      this.collisionX = this.game.width + 100;
       this.collisionY = this.frameYstart + Math.random() * this.frameYend;
+
+      //target position - where the have to go to
+      this.targetX = -2 * this.collisionRadius;
+      this.targetY = this.frameYstart + Math.random() * this.frameYend;
+      this.speedModifier = 5;
 
       //enemies sprite sheet
       this.image = document.getElementById("toad");
@@ -403,7 +407,26 @@ window.addEventListener("load", function () {
       this.game.drawCollisionCircle(this, context);
     }
 
-    update() {}
+    update() {
+      //set the player speed
+      this.distanceX = this.targetX - this.collisionX;
+      this.distanceY = this.targetY - this.collisionY;
+      //we have to keep a constant speed
+      const distanceXY = Math.hypot(this.distanceX, this.distanceY);
+      if (distanceXY > this.speedModifier) {
+        this.speedX = this.distanceX / distanceXY || 0;
+        this.speedY = this.distanceY / distanceXY || 0;
+      } else {
+        this.speedX = this.distanceX / this.speedModifier;
+        this.speedY = this.distanceY / this.speedModifier;
+      }
+
+      this.collisionX += this.speedX * this.speedModifier;
+
+      if (this.collisionY > this.upperLimit || this.speedY > 0) {
+        this.collisionY += this.speedY * this.speedModifier;
+      }
+    }
   }
 
   class Larva {
@@ -480,6 +503,8 @@ window.addEventListener("load", function () {
       //Enemies
       this.enemies = [];
       this.maxNumberOfEnemies = 5;
+      this.enemySpawnInterval = 50;
+      this.enemySpawnTimer = 0;
 
       //larvas
       this.larvas = [];
@@ -575,6 +600,7 @@ window.addEventListener("load", function () {
 
       //spawn enemies
       this.spawnEnemies();
+      this.enemies.forEach((enemy) => enemy.update());
 
       //hatch the eggs
       if (this.eggIncubationTimer > this.eggIncubationTime) {
@@ -634,9 +660,14 @@ window.addEventListener("load", function () {
     spawnEnemies() {
       const newEnemy = new Enemy(this);
 
-      if (this.enemies.length <= this.maxNumberOfEnemies) {
+      if (
+        this.enemies.length <= this.maxNumberOfEnemies &&
+        this.enemySpawnInterval <= this.enemySpawnTimer
+      ) {
         this.enemies.push(newEnemy);
+        this.enemySpawnTimer = 0;
       }
+      this.enemySpawnTimer++;
     }
 
     init() {
