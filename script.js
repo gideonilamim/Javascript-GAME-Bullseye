@@ -409,10 +409,13 @@ window.addEventListener("load", function () {
       this.width = this.canvas.width;
       this.height = this.canvas.height;
 
+      //this array will contain all the objects of the game later
+      this.objects = [];
+
       //create a player automatically when we create a game
       this.player = new Player(this);
 
-      this.displayCollisionCircle = true;
+      this.displayCollisionCircle = false;
 
       //obstacle properties
       this.numberOfObstacles = 10;
@@ -425,7 +428,7 @@ window.addEventListener("load", function () {
       this.maxNumberOfEggs = 10;
       this.eggSpawnInterval = 100;
       this.eggSpawnTimer = 0;
-      this.eggIncubationTime = 450;
+      this.eggIncubationTime = 600;
       this.eggIncubationTimer = 0;
 
       //larvas
@@ -500,19 +503,26 @@ window.addEventListener("load", function () {
 
     //the Render method will draw the player
     render(context) {
-      //this method will be called over and over again by animate.
-      this.player.draw(context);
-      this.player.update();
-      this.obstacles.forEach((obstacle) => obstacle.draw(context));
-
       //add the eggs
-      if (this.eggSpawnTimer > this.eggSpawnInterval) {
-        if (this.eggs.length < this.maxNumberOfEggs) {
-          this.addEggs();
-        }
-        this.eggSpawnTimer = 0;
+      this.addEggs();
+
+      //populate the objects array
+      this.objects = [this.player, ...this.obstacles, ...this.eggs];
+
+      let zIndex = 0;
+
+      while (zIndex < this.height + 100) {
+        this.objects.forEach((object) => {
+          const objectY = Math.floor(object.collisionY);
+          if (objectY === zIndex) {
+            object.draw(context);
+          }
+        });
+
+        zIndex++;
       }
 
+      this.player.update();
       //hatch the eggs
       if (this.eggIncubationTimer > this.eggIncubationTime) {
         if (this.eggs[0]) {
@@ -522,17 +532,14 @@ window.addEventListener("load", function () {
         this.eggIncubationTimer = 0;
       }
 
-      //render the eggs
       this.eggs.forEach((egg) => {
-        egg.draw(context);
         egg.update();
       });
-      this.eggSpawnTimer++;
+
       this.eggIncubationTimer++;
 
       //render the larvas
       this.larvas.forEach((larva) => {
-        larva.draw(context);
         larva.fleeToSafety();
       });
     }
@@ -542,20 +549,28 @@ window.addEventListener("load", function () {
       let collisionWithObstacle = false;
       let collisionWithEgg = false;
 
-      this.obstacles.forEach((obstacle) => {
-        if (this.checkCollision(obstacle, newEgg).collision) {
-          collisionWithObstacle = true;
-        }
-      });
+      if (this.eggSpawnTimer > this.eggSpawnInterval) {
+        if (this.eggs.length <= this.maxNumberOfEggs) {
+          this.obstacles.forEach((obstacle) => {
+            if (this.checkCollision(obstacle, newEgg).collision) {
+              collisionWithObstacle = true;
+            }
+          });
 
-      this.eggs.forEach((egg) => {
-        if (this.checkCollision(egg, newEgg).collision) {
-          collisionWithEgg = true;
+          this.eggs.forEach((egg) => {
+            if (this.checkCollision(egg, newEgg).collision) {
+              collisionWithEgg = true;
+            }
+          });
+
+          if (!collisionWithObstacle && !collisionWithEgg) {
+            console.log(this.eggs);
+            this.eggs.push(newEgg);
+          }
+          this.eggSpawnTimer = 0;
         }
-      });
-      if (!collisionWithObstacle && !collisionWithEgg) {
-        this.eggs.push(newEgg);
       }
+      this.eggSpawnTimer++;
     }
 
     hatchEgg(egg) {
