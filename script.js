@@ -508,21 +508,15 @@ window.addEventListener("load", function () {
 
       //populate the objects array
       this.objects = [this.player, ...this.obstacles, ...this.eggs];
-
-      let zIndex = 0;
-
-      while (zIndex < this.height + 100) {
-        this.objects.forEach((object) => {
-          const objectY = Math.floor(object.collisionY);
-          if (objectY === zIndex) {
-            object.draw(context);
-          }
-        });
-
-        zIndex++;
-      }
+      let sortedObjects = this.objects.sort((a, b) => {
+        return a.collisionY - b.collisionY;
+      });
+      sortedObjects.forEach((object) => {
+        object.draw(context);
+      });
 
       this.player.update();
+
       //hatch the eggs
       if (this.eggIncubationTimer > this.eggIncubationTime) {
         if (this.eggs[0]) {
