@@ -379,19 +379,20 @@ window.addEventListener("load", function () {
       //target position - where the have to go to
       this.targetX = -2 * this.collisionRadius;
       this.targetY = this.frameYstart + Math.random() * this.frameYend;
-      this.speedModifier = 2 + 3 * Math.random();
+      this.speedModifier = this.game.enemySpeed;
 
       //enemies sprite sheet
-      this.image = document.getElementById("toad");
+      this.image = document.getElementById("toads");
+      this.numberOfSprites = 4;
+      this.spriteHeight = this.image.naturalHeight / this.numberOfSprites;
       this.spriteWidth = this.image.naturalWidth;
-      this.spriteHeight = this.image.naturalHeight;
+      this.enemyType = this.spriteHeight * Math.floor(4 * Math.random());
     }
 
     draw(context) {
       // update the position
       this.spriteX = this.collisionX - this.spriteWidth * 0.5;
       this.spriteY = this.collisionY - this.spriteHeight + this.collisionRadius;
-
       /*drawImage needs at least 3 arguments: the image, the x coordinate and the y coordinate
       we can also add the width and the height
 
@@ -404,7 +405,17 @@ window.addEventListener("load", function () {
       
       https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/drawImage
       */
-      context.drawImage(this.image, this.spriteX, this.spriteY);
+      context.drawImage(
+        this.image,
+        0,
+        this.enemyType,
+        this.spriteWidth,
+        this.spriteHeight,
+        this.spriteX,
+        this.spriteY,
+        this.spriteWidth,
+        this.spriteHeight
+      );
       this.game.drawCollisionCircle(this, context);
     }
 
@@ -525,8 +536,9 @@ window.addEventListener("load", function () {
       //Enemies
       this.enemies = [];
       this.maxNumberOfEnemies = 5;
-      this.enemySpawnInterval = 150;
+      this.enemySpawnInterval = 100;
       this.enemySpawnTimer = 0;
+      this.enemySpeed = 2 + 3 * Math.random();
 
       //larvas
       this.larvas = [];
