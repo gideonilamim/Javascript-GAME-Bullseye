@@ -335,6 +335,7 @@ window.addEventListener("load", function () {
         this.game.player,
         ...this.game.eggs,
         ...this.game.obstacles,
+        ...this.game.enemies,
       ];
       collisionObjects.forEach((object) => {
         let { collision, sumOfRadii, distanceXY, distanceX, distanceY } =
@@ -378,7 +379,7 @@ window.addEventListener("load", function () {
       //target position - where the have to go to
       this.targetX = -2 * this.collisionRadius;
       this.targetY = this.frameYstart + Math.random() * this.frameYend;
-      this.speedModifier = 5;
+      this.speedModifier = 2 + 3 * Math.random();
 
       //enemies sprite sheet
       this.image = document.getElementById("toad");
@@ -408,23 +409,44 @@ window.addEventListener("load", function () {
     }
 
     update() {
-      //set the player speed
-      this.distanceX = this.targetX - this.collisionX;
-      this.distanceY = this.targetY - this.collisionY;
-      //we have to keep a constant speed
-      const distanceXY = Math.hypot(this.distanceX, this.distanceY);
-      if (distanceXY > this.speedModifier) {
-        this.speedX = this.distanceX / distanceXY || 0;
-        this.speedY = this.distanceY / distanceXY || 0;
-      } else {
-        this.speedX = this.distanceX / this.speedModifier;
-        this.speedY = this.distanceY / this.speedModifier;
-      }
+      //this array will contain all the objects that will be able to push the enemies
 
+      let collisionObjects = [
+        this.game.player,
+        ...this.game.obstacles,
+        ...this.game.enemies,
+      ];
+
+      collisionObjects.forEach((object) => {
+        let { collision, sumOfRadii, distanceXY, distanceX, distanceY } =
+          this.game.checkCollision(object, this);
+
+        if (collision && object != this) {
+          const unit_x = distanceX / distanceXY;
+          const unit_y = distanceY / distanceXY;
+
+          this.collisionX = object.collisionX - (sumOfRadii + 1) * unit_x;
+          this.collisionY = object.collisionY - (sumOfRadii + 1) * unit_y;
+        } else {
+          this.distanceX = this.targetX - this.collisionX;
+          this.distanceY = this.targetY - this.collisionY;
+
+          //set the enemy speed
+          //we have to keep a constant speed
+          const dXY = Math.hypot(this.distanceX, this.distanceY);
+          if (dXY > this.speedModifier) {
+            this.speedX = this.distanceX / dXY || 0;
+            this.speedY = this.distanceY / dXY || 0;
+          } else {
+            this.speedX = this.distanceX / this.speedModifier;
+            this.speedY = this.distanceY / this.speedModifier;
+          }
+        }
+      });
       this.collisionX += this.speedX * this.speedModifier;
 
       if (this.collisionY > this.upperLimit || this.speedY > 0) {
-        this.collisionY += this.speedY * this.speedModifier;
+        this.collisionY = this.collisionY + this.speedY * this.speedModifier;
       }
     }
   }
@@ -484,7 +506,7 @@ window.addEventListener("load", function () {
       //create a player automatically when we create a game
       this.player = new Player(this);
 
-      this.displayCollisionCircle = true;
+      this.displayCollisionCircle = false;
 
       //obstacle properties
       this.numberOfObstacles = 10;
@@ -497,13 +519,13 @@ window.addEventListener("load", function () {
       this.maxNumberOfEggs = 10;
       this.eggSpawnInterval = 100;
       this.eggSpawnTimer = 0;
-      this.eggIncubationTime = 600;
+      this.eggIncubationTime = 6000;
       this.eggIncubationTimer = 0;
 
       //Enemies
       this.enemies = [];
       this.maxNumberOfEnemies = 5;
-      this.enemySpawnInterval = 50;
+      this.enemySpawnInterval = 150;
       this.enemySpawnTimer = 0;
 
       //larvas
@@ -588,7 +610,7 @@ window.addEventListener("load", function () {
         ...this.eggs,
         ...this.enemies,
       ];
-      console.log(this.objects);
+
       let sortedObjects = this.objects.sort((a, b) => {
         return a.collisionY - b.collisionY;
       });
@@ -621,6 +643,8 @@ window.addEventListener("load", function () {
       this.larvas.forEach((larva) => {
         larva.fleeToSafety();
       });
+
+      //this.maxNumberOfEnemies = this.maxNumberOfEnemies + 0.01;
     }
 
     addEggs() {
@@ -643,7 +667,6 @@ window.addEventListener("load", function () {
           });
 
           if (!collisionWithObstacle && !collisionWithEgg) {
-            console.log(this.eggs);
             this.eggs.push(newEgg);
           }
           this.eggSpawnTimer = 0;
@@ -661,13 +684,21 @@ window.addEventListener("load", function () {
       const newEnemy = new Enemy(this);
 
       if (
-        this.enemies.length <= this.maxNumberOfEnemies &&
+        this.enemies.length < this.maxNumberOfEnemies &&
         this.enemySpawnInterval <= this.enemySpawnTimer
       ) {
         this.enemies.push(newEnemy);
         this.enemySpawnTimer = 0;
       }
       this.enemySpawnTimer++;
+
+      //delete the enemies that have reached their destination
+      this.enemies = this.enemies.filter((enemy) => {
+        return enemy.collisionX > 0;
+      });
+      //const index = this.enemies.findIndex((enemy) => (enemy = item));
+      //this.enemies.splice(index, index);
+      console.log(this.enemies);
     }
 
     init() {
