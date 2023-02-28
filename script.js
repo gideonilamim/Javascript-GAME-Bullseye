@@ -293,6 +293,8 @@ window.addEventListener("load", function () {
 
       return obstacleType;
     }
+
+    update() {}
   }
 
   class Egg {
@@ -479,6 +481,9 @@ window.addEventListener("load", function () {
       //the collision circle position will match that of the related egg. it will spawn where the eggs was.
       this.collisionX = this.egg.collisionX;
       this.collisionY = this.egg.collisionY;
+
+      //this will be toggled true if it gets eaten by the enemy
+      this.eaten = false;
     }
 
     draw(context) {
@@ -498,8 +503,37 @@ window.addEventListener("load", function () {
       this.game.drawCollisionCircle(this, context);
     }
 
-    fleeToSafety() {
+    update() {
+      const collisionObjects = [
+        this.game.player,
+        ...this.game.obstacles,
+        ...this.game.eggs,
+        ...this.game.larvae,
+      ];
+      const enemies = this.game.enemies;
+
+      collisionObjects.forEach((object) => {
+        let { collision, sumOfRadii, distanceXY, distanceX, distanceY } =
+          this.game.checkCollision(object, this);
+
+        if (collision && object != this) {
+          const unit_x = distanceX / distanceXY;
+          const unit_y = distanceY / distanceXY;
+
+          this.collisionX = object.collisionX - sumOfRadii * unit_x;
+          this.collisionY = object.collisionY - sumOfRadii * unit_y;
+        }
+      });
+
       this.collisionY = this.collisionY - this.speedModifier;
+
+      enemies.forEach((enemy) => {
+        const { collision } = this.game.checkCollision(enemy, this);
+
+        if (collision) {
+          this.eaten = true;
+        }
+      });
     }
   }
 
@@ -517,7 +551,7 @@ window.addEventListener("load", function () {
       //create a player automatically when we create a game
       this.player = new Player(this);
 
-      this.displayCollisionCircle = false;
+      this.displayCollisionCircle = true;
 
       //obstacle properties
       this.numberOfObstacles = 10;
@@ -527,11 +561,15 @@ window.addEventListener("load", function () {
       //eggs
       this.eggs = new Egg(this);
       this.eggs = [];
-      this.maxNumberOfEggs = 10;
-      this.eggSpawnInterval = 100;
+      this.maxNumberOfEggs = 1000;
+      this.eggSpawnInterval = 10;
       this.eggSpawnTimer = 0;
-      this.eggIncubationTime = 6000;
+      this.eggIncubationTime = 6;
       this.eggIncubationTimer = 0;
+
+      //larvae
+      this.larvae = [];
+      this.larvaUpperLimit = 220;
 
       //Enemies
       this.enemies = [];
@@ -539,9 +577,6 @@ window.addEventListener("load", function () {
       this.enemySpawnInterval = 100;
       this.enemySpawnTimer = 0;
       this.enemySpeed = 2 + 3 * Math.random();
-
-      //larvas
-      this.larvas = [];
 
       //mouse position
       this.mouse = {
@@ -621,6 +656,7 @@ window.addEventListener("load", function () {
         ...this.obstacles,
         ...this.eggs,
         ...this.enemies,
+        ...this.larvae,
       ];
 
       let sortedObjects = this.objects.sort((a, b) => {
@@ -628,13 +664,11 @@ window.addEventListener("load", function () {
       });
       sortedObjects.forEach((object) => {
         object.draw(context);
+        object.update();
       });
-
-      this.player.update();
 
       //spawn enemies
       this.spawnEnemies();
-      this.enemies.forEach((enemy) => enemy.update());
 
       //hatch the eggs
       if (this.eggIncubationTimer > this.eggIncubationTime) {
@@ -644,17 +678,9 @@ window.addEventListener("load", function () {
         this.eggs.shift();
         this.eggIncubationTimer = 0;
       }
-
-      this.eggs.forEach((egg) => {
-        egg.update();
-      });
-
       this.eggIncubationTimer++;
 
-      //render the larvas
-      this.larvas.forEach((larva) => {
-        larva.fleeToSafety();
-      });
+      this.updateLarvae();
 
       //this.maxNumberOfEnemies = this.maxNumberOfEnemies + 0.01;
     }
@@ -689,7 +715,18 @@ window.addEventListener("load", function () {
 
     hatchEgg(egg) {
       const newLarva = new Larva(this, egg);
-      this.larvas.push(newLarva);
+      this.larvae.push(newLarva);
+    }
+
+    updateLarvae() {
+      this.larvae = this.larvae.filter((larva) => {
+        console.log(larva.collisionX);
+        return larva.eaten === false;
+      });
+      this.larvae = this.larvae.filter((larva) => {
+        console.log(larva.collisionX);
+        return larva.collisionY > this.larvaUpperLimit;
+      });
     }
 
     spawnEnemies() {
@@ -710,7 +747,6 @@ window.addEventListener("load", function () {
       });
       //const index = this.enemies.findIndex((enemy) => (enemy = item));
       //this.enemies.splice(index, index);
-      console.log(this.enemies);
     }
 
     init() {
