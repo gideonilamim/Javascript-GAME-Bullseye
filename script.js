@@ -388,7 +388,8 @@ window.addEventListener("load", function () {
       this.numberOfSprites = 4;
       this.spriteHeight = this.image.naturalHeight / this.numberOfSprites;
       this.spriteWidth = this.image.naturalWidth;
-      this.enemyType = this.spriteHeight * Math.floor(4 * Math.random());
+      this.cropAt =
+        this.spriteHeight * Math.floor(this.numberOfSprites * Math.random());
     }
 
     draw(context) {
@@ -410,7 +411,7 @@ window.addEventListener("load", function () {
       context.drawImage(
         this.image,
         0,
-        this.enemyType,
+        this.cropAt,
         this.spriteWidth,
         this.spriteHeight,
         this.spriteX,
@@ -482,11 +483,21 @@ window.addEventListener("load", function () {
       this.collisionX = this.egg.collisionX;
       this.collisionY = this.egg.collisionY;
 
+      //sprite image
+      this.image = document.getElementById("larva");
+      this.numberOfSprites = 2;
+      this.spriteHeight = this.image.naturalHeight / this.numberOfSprites;
+      this.spriteWidth = this.image.naturalWidth;
+      this.cropAt =
+        this.spriteHeight * Math.floor(this.numberOfSprites * Math.random());
+
       //this will be toggled true if it gets eaten by the enemy
       this.eaten = false;
     }
 
     draw(context) {
+      this.spriteX = this.collisionX - this.spriteWidth * 0.5;
+      this.spriteY = this.collisionY - this.spriteHeight * 0.75;
       /*drawImage needs at least 3 arguments: the image, the x coordinate and the y coordinate
       we can also add the width and the height
 
@@ -499,7 +510,18 @@ window.addEventListener("load", function () {
       
       https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/drawImage
       */
-
+      context.drawImage(
+        this.image,
+        0,
+        this.cropAt,
+        this.spriteWidth,
+        this.spriteHeight,
+        this.spriteX,
+        this.spriteY,
+        this.spriteWidth,
+        this.spriteHeight
+      );
+      //context.drawImage(image);
       this.game.drawCollisionCircle(this, context);
     }
 
@@ -551,7 +573,7 @@ window.addEventListener("load", function () {
       //create a player automatically when we create a game
       this.player = new Player(this);
 
-      this.displayCollisionCircle = true;
+      this.displayCollisionCircle = false;
 
       //obstacle properties
       this.numberOfObstacles = 10;
@@ -561,10 +583,10 @@ window.addEventListener("load", function () {
       //eggs
       this.eggs = new Egg(this);
       this.eggs = [];
-      this.maxNumberOfEggs = 1000;
-      this.eggSpawnInterval = 10;
-      this.eggSpawnTimer = 0;
-      this.eggIncubationTime = 6;
+      this.maxNumberOfEggs = 100;
+      this.eggSpawnInterval = 100;
+      this.eggSpawnTimer = 100;
+      this.eggIncubationTime = 200;
       this.eggIncubationTimer = 0;
 
       //larvae
@@ -574,9 +596,13 @@ window.addEventListener("load", function () {
       //Enemies
       this.enemies = [];
       this.maxNumberOfEnemies = 5;
-      this.enemySpawnInterval = 100;
+      this.enemySpawnInterval = 300;
       this.enemySpawnTimer = 0;
-      this.enemySpeed = 2 + 3 * Math.random();
+      this.enemySpeed = 1 + 2 * Math.random();
+
+      //player score
+      this.score = 0;
+      this.runningTime;
 
       //mouse position
       this.mouse = {
@@ -584,6 +610,10 @@ window.addEventListener("load", function () {
         y: this.height * 0.5,
         pressed: false,
       };
+
+      //initial time
+      this.initialTime = Date.now();
+      this.runningTime;
 
       //event listeners
       canvas.addEventListener("mousedown", (e) => {
@@ -682,7 +712,8 @@ window.addEventListener("load", function () {
 
       this.updateLarvae();
 
-      //this.maxNumberOfEnemies = this.maxNumberOfEnemies + 0.01;
+      //measure the total running time
+      this.runningTime = Math.floor((Date.now() - this.initialTime) / 1000);
     }
 
     addEggs() {
@@ -719,12 +750,16 @@ window.addEventListener("load", function () {
     }
 
     updateLarvae() {
-      this.larvae = this.larvae.filter((larva) => {
-        console.log(larva.collisionX);
-        return larva.eaten === false;
+      this.larvae.forEach((larva) => {
+        if (larva.collisionY < this.larvaUpperLimit) {
+          this.addScore();
+        }
       });
       this.larvae = this.larvae.filter((larva) => {
-        console.log(larva.collisionX);
+        return larva.eaten === false;
+      });
+
+      this.larvae = this.larvae.filter((larva) => {
         return larva.collisionY > this.larvaUpperLimit;
       });
     }
@@ -747,6 +782,11 @@ window.addEventListener("load", function () {
       });
       //const index = this.enemies.findIndex((enemy) => (enemy = item));
       //this.enemies.splice(index, index);
+    }
+
+    addScore() {
+      this.score++;
+      console.log(this.score);
     }
 
     init() {
@@ -824,7 +864,6 @@ window.addEventListener("load", function () {
   (x, y, width, height) to create a rectangle
   */
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
       //render player, obstacles, eggs, etc...
       game.render(ctx);
 
