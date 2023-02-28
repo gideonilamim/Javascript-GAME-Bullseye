@@ -22,6 +22,7 @@
 #obstacles,
 #bull,
 #egg,
-#toads {
+#toads,
+#larva {
   display: none;
 }
