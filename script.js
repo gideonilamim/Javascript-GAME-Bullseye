@@ -642,7 +642,9 @@ window.addEventListener("load", function () {
       //eggs
       this.eggs = new Egg(this);
       this.eggs = [];
-      this.maxNumberOfEggs = 5;
+      this.totalEggs = 50;
+      this.spawnedEggs = 0;
+      this.maxNumberOfEggs = 5; //at once
       this.eggSpawnInterval = 2;
       this.eggSpawnTimer = 0;
       this.eggIncubationTime = 4;
@@ -741,7 +743,6 @@ window.addEventListener("load", function () {
 
     //the Render method will draw the player
     render(context, deltaTime) {
-      console.log(this.particles);
       this.deltaTime = deltaTime * 0.001;
 
       //add the eggs
@@ -779,12 +780,8 @@ window.addEventListener("load", function () {
       //measure the total running time
       this.runningTime += this.deltaTime;
 
-      //render the score text
-      context.save();
-      context.textAlign = "left";
-      context.fillText(`Score: ${this.score}`, 50, 50);
-      context.fillText(`Eaten: ${this.eatenLarvae}`, 50, 100);
-      context.restore();
+      //render the dashboard
+      this.renderDashboard(context);
     }
 
     addEggs() {
@@ -792,7 +789,10 @@ window.addEventListener("load", function () {
       let collisionWithObstacle = false;
       let collisionWithEgg = false;
 
-      if (this.eggSpawnTimer >= this.eggSpawnInterval) {
+      if (
+        this.eggSpawnTimer >= this.eggSpawnInterval &&
+        this.spawnedEggs < this.totalEggs
+      ) {
         if (this.eggs.length <= this.maxNumberOfEggs) {
           this.obstacles.forEach((obstacle) => {
             if (this.checkCollision(obstacle, newEgg).collision) {
@@ -808,8 +808,9 @@ window.addEventListener("load", function () {
 
           if (!collisionWithObstacle && !collisionWithEgg) {
             this.eggs.push(newEgg);
+            this.spawnedEggs++;
+            this.eggSpawnTimer = 0;
           }
-          this.eggSpawnTimer = 0;
         }
       }
       this.eggSpawnTimer += this.deltaTime;
@@ -904,6 +905,24 @@ window.addEventListener("load", function () {
 
     addScore() {
       this.score++;
+    }
+
+    renderDashboard(context) {
+      //render the score and other texts text
+      context.save();
+      context.textAlign = "left";
+      context.fillText(`Saved: ${this.score}`, 50, 50);
+      context.fillText(`Eaten: ${this.eatenLarvae}`, 50, 100);
+      context.fillText(
+        `${this.spawnedEggs} of ${this.totalEggs} eggs`,
+        1000,
+        50
+      );
+      context.restore();
+      context.save();
+      context.textAlign = "center";
+      context.fillText(`Score: ${this.score}`, this.width / 2, 70);
+      context.restore();
     }
 
     init() {
