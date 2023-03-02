@@ -14,7 +14,8 @@ window.addEventListener("load", function () {
 
   ctx.fillStyle = "white";
   ctx.lineWidth = 3;
-  ctx.strokeStyle = "white";
+  ctx.strokeStyle = "black";
+  ctx.font = "40px arial";
 
   //object player
   class Player {
@@ -301,6 +302,7 @@ window.addEventListener("load", function () {
     constructor(game) {
       this.game = game;
       this.collisionRadius = 45;
+      this.eggIncubationTimer = 0;
 
       //frame inside the canvas
       this.frameXstart = this.collisionRadius;
@@ -331,6 +333,8 @@ window.addEventListener("load", function () {
     }
 
     update() {
+      this.eggIncubationTimer += this.game.deltaTime;
+
       //to help us, we will create an array to contain all the objects that the egg may collide with.
       // the spread operator (...) will help us to do that
       let collisionObjects = [
@@ -549,14 +553,51 @@ window.addEventListener("load", function () {
 
       this.collisionY = this.collisionY - this.speedModifier;
 
+      //larva interaction with enemies
       enemies.forEach((enemy) => {
         const { collision } = this.game.checkCollision(enemy, this);
 
         if (collision) {
           this.eaten = true;
+          this.game.eatenLarvae++;
         }
       });
     }
+  }
+
+  class Particle {
+    constructor(game, larva) {
+      this.game = game;
+      this.x = larva.collisionX;
+      this.y = larva.collisionY;
+      this.radius = Math.floor(Math.random() * 10 + 3);
+      this.speedX = Math.random() * 6 - 3;
+      this.speedY = Math.random() * 2 + 0.5;
+      this.angle = 0;
+      this.va = Math.random() * 0.1 + 0.01;
+    }
+
+    draw(context) {
+      context.save();
+      context.fillStyle = "green";
+      context.beginPath();
+      context.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+      context.fill();
+      context.stroke();
+      context.restore();
+    }
+  }
+
+  class Firefly extends Particle {
+    update() {
+      this.angle += this.va;
+      this.x += this.speedX * Math.cos(this.angle);
+      this.y -= this.speedY;
+    }
+  }
+
+  class Spark extends Particle {
+    update() {}
   }
 
   //the class Game will handle all the game logics
@@ -566,6 +607,7 @@ window.addEventListener("load", function () {
       this.canvas = canvas;
       this.width = this.canvas.width;
       this.height = this.canvas.height;
+      this.deltaTime = 0;
 
       //this array will contain all the objects of the game later
       this.objects = [];
@@ -583,22 +625,25 @@ window.addEventListener("load", function () {
       //eggs
       this.eggs = new Egg(this);
       this.eggs = [];
-      this.maxNumberOfEggs = 100;
-      this.eggSpawnInterval = 100;
-      this.eggSpawnTimer = 100;
-      this.eggIncubationTime = 200;
-      this.eggIncubationTimer = 0;
+      this.maxNumberOfEggs = 50;
+      this.eggSpawnInterval = 2;
+      this.eggSpawnTimer = 0;
+      this.eggIncubationTime = 3;
 
       //larvae
       this.larvae = [];
       this.larvaUpperLimit = 220;
+      this.eatenLarvae = 0;
 
       //Enemies
       this.enemies = [];
-      this.maxNumberOfEnemies = 5;
-      this.enemySpawnInterval = 300;
+      this.maxNumberOfEnemies = 0;
+      this.enemySpawnInterval = 2;
       this.enemySpawnTimer = 0;
       this.enemySpeed = 1 + 2 * Math.random();
+
+      //particles
+      this.particles = [];
 
       //player score
       this.score = 0;
@@ -613,7 +658,7 @@ window.addEventListener("load", function () {
 
       //initial time
       this.initialTime = Date.now();
-      this.runningTime;
+      this.runningTime = 0;
 
       //event listeners
       canvas.addEventListener("mousedown", (e) => {
@@ -676,7 +721,9 @@ window.addEventListener("load", function () {
     }
 
     //the Render method will draw the player
-    render(context) {
+    render(context, deltaTime) {
+      this.deltaTime = deltaTime * 0.001;
+
       //add the eggs
       this.addEggs();
 
@@ -687,6 +734,7 @@ window.addEventListener("load", function () {
         ...this.eggs,
         ...this.enemies,
         ...this.larvae,
+        ...this.particles,
       ];
 
       let sortedObjects = this.objects.sort((a, b) => {
@@ -701,19 +749,22 @@ window.addEventListener("load", function () {
       this.spawnEnemies();
 
       //hatch the eggs
-      if (this.eggIncubationTimer > this.eggIncubationTime) {
-        if (this.eggs[0]) {
-          this.hatchEgg(this.eggs[0]);
-        }
-        this.eggs.shift();
-        this.eggIncubationTimer = 0;
-      }
-      this.eggIncubationTimer++;
+      this.hatchEgg();
 
       this.updateLarvae();
 
+      //remove unwanted objects
+      this.removeObjects();
+
       //measure the total running time
-      this.runningTime = Math.floor((Date.now() - this.initialTime) / 1000);
+      this.runningTime += this.deltaTime;
+
+      //render the score text
+      context.save();
+      context.textAlign = "left";
+      context.fillText(`Score: ${this.score}`, 50, 50);
+      context.fillText(`Eaten: ${this.eatenLarvae}`, 50, 100);
+      context.restore();
     }
 
     addEggs() {
@@ -721,7 +772,7 @@ window.addEventListener("load", function () {
       let collisionWithObstacle = false;
       let collisionWithEgg = false;
 
-      if (this.eggSpawnTimer > this.eggSpawnInterval) {
+      if (this.eggSpawnTimer >= this.eggSpawnInterval) {
         if (this.eggs.length <= this.maxNumberOfEggs) {
           this.obstacles.forEach((obstacle) => {
             if (this.checkCollision(obstacle, newEgg).collision) {
@@ -741,27 +792,46 @@ window.addEventListener("load", function () {
           this.eggSpawnTimer = 0;
         }
       }
-      this.eggSpawnTimer++;
+      this.eggSpawnTimer += this.deltaTime;
     }
 
-    hatchEgg(egg) {
-      const newLarva = new Larva(this, egg);
-      this.larvae.push(newLarva);
+    hatchEgg() {
+      //this.larvae.push(newLarva);
+      this.eggs.forEach((egg) => {
+        //console.log(egg.eggIncubationTimer + " " + this.eggIncubationTime);
+        if (egg.eggIncubationTimer > this.eggIncubationTime) {
+          const newLarva = new Larva(this, this.eggs[0]);
+          this.larvae.push(newLarva);
+
+          //remove the hatched egg
+          const eggIndex = this.eggs.indexOf(egg);
+          this.eggs.splice(eggIndex, 1);
+        }
+      });
     }
 
     updateLarvae() {
+      //larvae that have made it
       this.larvae.forEach((larva) => {
         if (larva.collisionY < this.larvaUpperLimit) {
           this.addScore();
+          this.createFireFlies(larva);
         }
-      });
-      this.larvae = this.larvae.filter((larva) => {
-        return larva.eaten === false;
       });
 
       this.larvae = this.larvae.filter((larva) => {
         return larva.collisionY > this.larvaUpperLimit;
       });
+    }
+
+    createFireFlies(larva) {
+      //create a random number of fireflies
+      const numberOfFireflies = Math.random() * 3 + 1;
+
+      for (let i = 0; i <= numberOfFireflies; i++) {
+        const fireFlies = new Firefly(this, larva);
+        this.particles.push(fireFlies);
+      }
     }
 
     spawnEnemies() {
@@ -774,19 +844,28 @@ window.addEventListener("load", function () {
         this.enemies.push(newEnemy);
         this.enemySpawnTimer = 0;
       }
-      this.enemySpawnTimer++;
+      this.enemySpawnTimer += this.deltaTime;
 
       //delete the enemies that have reached their destination
       this.enemies = this.enemies.filter((enemy) => {
         return enemy.collisionX > 0;
       });
-      //const index = this.enemies.findIndex((enemy) => (enemy = item));
-      //this.enemies.splice(index, index);
+    }
+
+    removeObjects() {
+      //remove eaten larvae
+      this.larvae = this.larvae.filter((larva) => {
+        return larva.eaten === false;
+      });
+
+      //remove particles
+      this.particles = this.particles.filter((particle) => {
+        return particle.y > 0;
+      });
     }
 
     addScore() {
       this.score++;
-      console.log(this.score);
     }
 
     init() {
@@ -865,7 +944,7 @@ window.addEventListener("load", function () {
   */
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       //render player, obstacles, eggs, etc...
-      game.render(ctx);
+      game.render(ctx, deltaTime);
 
       //reset the timer
       timer = 0;
