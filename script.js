@@ -566,10 +566,11 @@ window.addEventListener("load", function () {
   }
 
   class Particle {
-    constructor(game, larva) {
+    constructor(game, larva, color) {
       this.game = game;
       this.x = larva.collisionX;
       this.y = larva.collisionY;
+      this.color = color;
       this.radius = Math.floor(Math.random() * 10 + 3);
       this.speedX = Math.random() * 6 - 3;
       this.speedY = Math.random() * 2 + 0.5;
@@ -579,7 +580,7 @@ window.addEventListener("load", function () {
 
     draw(context) {
       context.save();
-      context.fillStyle = "green";
+      context.fillStyle = this.color;
       context.beginPath();
       context.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
       context.fill();
@@ -591,13 +592,29 @@ window.addEventListener("load", function () {
   class Firefly extends Particle {
     update() {
       this.angle += this.va;
-      this.x += this.speedX * Math.cos(this.angle);
-      this.y -= this.speedY;
+      this.x -= this.speedX * Math.cos(this.angle);
+      this.y -= this.speedY * Math.sin(this.angle);
+      if (this.radius > 0.1) {
+        this.radius -= 0.05;
+      }
     }
   }
 
   class Spark extends Particle {
-    update() {}
+    constructor(game, larva, color) {
+      super(game, larva, color);
+      this.speedX = Math.random() * 6 - 3;
+      this.speedY = Math.random() * 6 - 3;
+    }
+
+    update() {
+      this.x += this.speedX;
+      this.y += this.speedY;
+
+      if (this.radius > 0.1) {
+        this.radius -= 0.1;
+      }
+    }
   }
 
   //the class Game will handle all the game logics
@@ -625,10 +642,10 @@ window.addEventListener("load", function () {
       //eggs
       this.eggs = new Egg(this);
       this.eggs = [];
-      this.maxNumberOfEggs = 50;
+      this.maxNumberOfEggs = 5;
       this.eggSpawnInterval = 2;
       this.eggSpawnTimer = 0;
-      this.eggIncubationTime = 3;
+      this.eggIncubationTime = 4;
 
       //larvae
       this.larvae = [];
@@ -637,13 +654,15 @@ window.addEventListener("load", function () {
 
       //Enemies
       this.enemies = [];
-      this.maxNumberOfEnemies = 0;
-      this.enemySpawnInterval = 2;
+      this.maxNumberOfEnemies = 5;
+      this.enemySpawnInterval = 3;
       this.enemySpawnTimer = 0;
-      this.enemySpeed = 1 + 2 * Math.random();
+      this.enemySpeed = 0;
 
       //particles
       this.particles = [];
+      this.firefliesColor = "#05da14";
+      this.sparksColor = "white";
 
       //player score
       this.score = 0;
@@ -722,6 +741,7 @@ window.addEventListener("load", function () {
 
     //the Render method will draw the player
     render(context, deltaTime) {
+      console.log(this.particles);
       this.deltaTime = deltaTime * 0.001;
 
       //add the eggs
@@ -819,22 +839,35 @@ window.addEventListener("load", function () {
         }
       });
 
-      this.larvae = this.larvae.filter((larva) => {
-        return larva.collisionY > this.larvaUpperLimit;
+      //eaten larva
+      this.larvae.forEach((larva) => {
+        if (larva.eaten) {
+          this.createSparks(larva);
+        }
       });
     }
 
     createFireFlies(larva) {
-      //create a random number of fireflies
+      //create a random number of fireflies each time
       const numberOfFireflies = Math.random() * 3 + 1;
 
       for (let i = 0; i <= numberOfFireflies; i++) {
-        const fireFlies = new Firefly(this, larva);
+        const fireFlies = new Firefly(this, larva, this.firefliesColor);
         this.particles.push(fireFlies);
+      }
+    }
+    createSparks(larva) {
+      //create a random number of fireflies each time
+      const numberOfSparks = Math.random() * 3 + 3;
+
+      for (let i = 0; i <= numberOfSparks; i++) {
+        const spark = new Spark(this, larva, this.sparksColor);
+        this.particles.push(spark);
       }
     }
 
     spawnEnemies() {
+      this.enemySpeed = 1 + 2 * Math.random();
       const newEnemy = new Enemy(this);
 
       if (
@@ -858,9 +891,14 @@ window.addEventListener("load", function () {
         return larva.eaten === false;
       });
 
+      //remove scored larvae
+      this.larvae = this.larvae.filter((larva) => {
+        return larva.collisionY > this.larvaUpperLimit;
+      });
+
       //remove particles
       this.particles = this.particles.filter((particle) => {
-        return particle.y > 0;
+        return particle.radius > 0.1;
       });
     }
 
