@@ -673,7 +673,7 @@ window.addEventListener("load", function () {
       //eggs
       this.eggs = new Egg(this);
       this.eggs = [];
-      this.totalEggs = 2;
+      this.totalEggs = 50;
       this.spawnedEggs = 0;
       this.maxNumberOfEggs = 5; //at once
       this.eggSpawnInterval = 2;
@@ -704,6 +704,18 @@ window.addEventListener("load", function () {
       //player score
       this.score = 0;
       this.runningTime;
+
+      //display tips
+      this.tips = [
+        "Older hatchlings will give you more points.",
+        "To save the hatchlings, push the enemies around",
+        "To win the game, save most of the hatchlings",
+        "Half of these tips are useful",
+        "The moon affects the tides",
+        "Add toothpaste to your food, and you'll save on brushing time",
+      ];
+
+      this.tip = this.tips[Math.floor(Math.random() * this.tips.length)];
 
       //mouse position
       this.mouse = {
@@ -1038,20 +1050,19 @@ window.addEventListener("load", function () {
       context.font = `40px ${font}`;
       context.fillText(message2, this.width * 0.5, this.height * 0.5 + 100);
       context.font = `20px ${font}`;
-      context.fillText("Press 'R' to restart.", 810, 706);
-      context.font = `20px ${font}`;
-      context.fillText("Press 'C' to reset memory.", 1020, 706); //1020 , 706
+      context.textAlign = "left";
+      context.fillText(this.tip, 246, 706);
+      context.fillText("Press 'R' to restart.", 775, 706);
+      context.fillText("Press 'C' to reset memory.", 947, 706); //1020 , 706
       context.restore();
-      //console.log(this.mouse.x, this.mouse.y);
 
-      //console.log(this.pressedKey.toUpperCase());
       if (this.pressedKey.toUpperCase() === "R") {
         console.log("restarting");
         restart();
       }
       if (this.pressedKey.toUpperCase() === "C") {
         console.log("clearing memory");
-        //localStorage.score = "";
+        localStorage.score = "";
       }
     }
     animateWord(context, word) {
