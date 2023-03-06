@@ -330,6 +330,23 @@ window.addEventListener("load", function () {
       this.spriteY = this.collisionY - this.spriteHeight + this.collisionRadius;
       //draw image
       context.drawImage(this.image, this.spriteX, this.spriteY);
+
+      //draw number on top of the egg
+      const timerPosX = this.collisionX - this.spriteWidth * 0.5;
+      const timerPosY =
+        this.collisionY - this.spriteHeight + this.collisionRadius;
+
+      const countDownTimer =
+        this.game.eggIncubationTime - this.eggIncubationTimer;
+      context.save();
+      context.textAlign = "center";
+      context.font = `40px ${font}`;
+      context.fillText(
+        countDownTimer.toFixed(0),
+        this.spriteX + 50,
+        this.spriteY
+      );
+      context.restore();
       this.game.drawCollisionCircle(this, context);
     }
 
@@ -656,12 +673,12 @@ window.addEventListener("load", function () {
       //eggs
       this.eggs = new Egg(this);
       this.eggs = [];
-      this.totalEggs = 10;
+      this.totalEggs = 50;
       this.spawnedEggs = 0;
       this.maxNumberOfEggs = 5; //at once
       this.eggSpawnInterval = 2;
       this.eggSpawnTimer = 0;
-      this.eggIncubationTime = 4;
+      this.eggIncubationTime = 10;
 
       //larvae
       this.larvae = [];
@@ -789,7 +806,7 @@ window.addEventListener("load", function () {
       if (!this.gameOver) {
         this.objects = [...this.objects, this.player];
       }
-
+      console.log(this.objects);
       let sortedObjects = this.objects.sort((a, b) => {
         return a.collisionY - b.collisionY;
       });
@@ -1029,6 +1046,7 @@ window.addEventListener("load", function () {
       //console.log(this.pressedKey.toUpperCase());
       if (this.pressedKey.toUpperCase() === "R") {
         console.log("restarting");
+        restart();
       }
       if (this.pressedKey.toUpperCase() === "C") {
         console.log("clearing memory");
@@ -1093,7 +1111,7 @@ window.addEventListener("load", function () {
   }
 
   //instantiate the Game class
-  const game = new Game(canvas);
+  let game = new Game(canvas);
   game.init();
 
   // we need a loop to animate our game
@@ -1131,6 +1149,12 @@ window.addEventListener("load", function () {
     requestAnimationFrame(function)  this method will tell the browser to repeat the function to create an animation.
     here, it's reapeating the parent function*/
     window.requestAnimationFrame(animate);
+  }
+
+  function restart() {
+    //instantiate the Game class
+    game = new Game(canvas);
+    game.init();
   }
 
   //call animate to start the animation
