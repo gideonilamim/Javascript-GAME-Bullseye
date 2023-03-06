@@ -596,8 +596,8 @@ window.addEventListener("load", function () {
   class Particle {
     constructor(game, larva, color) {
       this.game = game;
-      this.x = larva.collisionX;
-      this.y = larva.collisionY;
+      this.collisionX = larva.collisionX;
+      this.collisionY = larva.collisionY;
       this.color = color;
       this.radius = Math.floor(Math.random() * 10 + 3);
       this.speedX = Math.random() * 6 - 3;
@@ -610,7 +610,13 @@ window.addEventListener("load", function () {
       context.save();
       context.fillStyle = this.color;
       context.beginPath();
-      context.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+      context.arc(
+        this.collisionX,
+        this.collisionY,
+        this.radius,
+        0,
+        Math.PI * 2
+      );
       context.fill();
       context.stroke();
       context.restore();
@@ -620,8 +626,8 @@ window.addEventListener("load", function () {
   class Firefly extends Particle {
     update() {
       this.angle += this.va;
-      this.x -= this.speedX * Math.cos(this.angle);
-      this.y -= this.speedY * Math.sin(this.angle);
+      this.collisionX -= this.speedX * Math.cos(this.angle);
+      this.collisionY -= this.speedY * Math.sin(this.angle);
       if (this.radius > 0.1) {
         this.radius -= 0.05;
       }
@@ -636,8 +642,8 @@ window.addEventListener("load", function () {
     }
 
     update() {
-      this.x += this.speedX;
-      this.y += this.speedY;
+      this.collisionX += this.speedX;
+      this.collisionY += this.speedY;
 
       if (this.radius > 0.1) {
         this.radius -= 0.1;
@@ -806,26 +812,44 @@ window.addEventListener("load", function () {
       this.deltaTime = deltaTime * 0.001;
 
       //populate the objects array
-      this.objects = [
-        ...this.obstacles,
-        ...this.enemies,
-        ...this.particles,
-        ...this.larvae,
-        ...this.eggs,
-      ];
-
       //if the game is over, the player will not be rendered
       if (!this.gameOver) {
-        this.objects = [...this.objects, this.player];
+        this.objects = [
+          ...this.obstacles,
+          ...this.enemies,
+          ...this.particles,
+          ...this.larvae,
+          ...this.eggs,
+          this.player,
+        ];
+      } else {
+        this.objects = [
+          ...this.obstacles,
+          ...this.enemies,
+          ...this.particles,
+          ...this.larvae,
+          ...this.eggs,
+        ];
       }
 
       let sortedObjects = this.objects.sort((a, b) => {
-        return a.collisionY - b.collisionY;
+        return Math.floor(a.collisionY) - Math.floor(b.collisionY);
       });
       sortedObjects.forEach((object) => {
-        object.draw(context);
         object.update();
+        object.draw(context);
       });
+
+      /*for (let y = 0; y <= this.height; y++) {
+        this.objects.forEach((object) => {
+          if (Math.floor(object.collisionY) === y) {
+            object.draw(context);
+          }
+        });
+      }
+      this.objects.forEach((object) => {
+        object.update();
+      });*/
 
       //spawn enemies
       this.spawnEnemies();
@@ -936,7 +960,7 @@ window.addEventListener("load", function () {
 
     createSparks(larva) {
       //create a random number of fireflies each time
-      const numberOfSparks = Math.random() * 3 + 6;
+      const numberOfSparks = Math.random() * 3 + 7;
 
       for (let i = 0; i <= numberOfSparks; i++) {
         const spark = new Spark(this, larva, this.sparksColor);

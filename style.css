@@ -4,6 +4,9 @@
   box-sizing: border-box;
   font-family: "Bangers", cursive;
 }
+body {
+  background-color: black;
+}
 
 #canvas1 {
   background: url("./images/background.png");
