@@ -15,7 +15,8 @@ window.addEventListener("load", function () {
   ctx.fillStyle = "white";
   ctx.lineWidth = 3;
   ctx.strokeStyle = "black";
-  ctx.font = "40px arial";
+  const font = "Bangers";
+  ctx.font = `40px ${font}`;
 
   //object player
   class Player {
@@ -475,6 +476,9 @@ window.addEventListener("load", function () {
       this.egg = egg;
       this.collisionRadius = 40;
       this.speedModifier = 0.5;
+      this.larvaLife = 0;
+      this.adultAfter = this.game.adultAfter;
+      this.adult = false;
 
       //obstacle frame inside the canvas
       this.frameXstart = this.collisionRadius;
@@ -492,8 +496,6 @@ window.addEventListener("load", function () {
       this.numberOfSprites = 2;
       this.spriteHeight = this.image.naturalHeight / this.numberOfSprites;
       this.spriteWidth = this.image.naturalWidth;
-      this.cropAt =
-        this.spriteHeight * Math.floor(this.numberOfSprites * Math.random());
 
       //this will be toggled true if it gets eaten by the enemy
       this.eaten = false;
@@ -502,6 +504,8 @@ window.addEventListener("load", function () {
     draw(context) {
       this.spriteX = this.collisionX - this.spriteWidth * 0.5;
       this.spriteY = this.collisionY - this.spriteHeight * 0.75;
+      this.cropAt = this.spriteHeight * (this.adult ? 1 : 0);
+
       /*drawImage needs at least 3 arguments: the image, the x coordinate and the y coordinate
       we can also add the width and the height
 
@@ -562,6 +566,13 @@ window.addEventListener("load", function () {
           this.game.eatenLarvae++;
         }
       });
+
+      //the older the larva lives, the more points it will give
+      this.larvaLife += this.game.deltaTime;
+
+      if (this.larvaLife > this.adultAfter) {
+        this.adult = true;
+      }
     }
   }
 
@@ -625,6 +636,9 @@ window.addEventListener("load", function () {
       this.width = this.canvas.width;
       this.height = this.canvas.height;
       this.deltaTime = 0;
+      this.gameOver = false;
+      this.gameWin = false;
+      this.pressedKey = "";
 
       //this array will contain all the objects of the game later
       this.objects = [];
@@ -642,7 +656,7 @@ window.addEventListener("load", function () {
       //eggs
       this.eggs = new Egg(this);
       this.eggs = [];
-      this.totalEggs = 50;
+      this.totalEggs = 10;
       this.spawnedEggs = 0;
       this.maxNumberOfEggs = 5; //at once
       this.eggSpawnInterval = 2;
@@ -651,8 +665,12 @@ window.addEventListener("load", function () {
 
       //larvae
       this.larvae = [];
+      this.adultAfter = 7;
       this.larvaUpperLimit = 220;
       this.eatenLarvae = 0;
+      this.savedLarvae = 0;
+      this.adultLarvaScore = 50;
+      this.youngLarvaScore = 20;
 
       //Enemies
       this.enemies = [];
@@ -677,6 +695,12 @@ window.addEventListener("load", function () {
         pressed: false,
       };
 
+      //mouse position
+      this.keys = {
+        keyRpressed: "",
+        keyCpressed: "",
+      };
+
       //initial time
       this.initialTime = Date.now();
       this.runningTime = 0;
@@ -697,6 +721,13 @@ window.addEventListener("load", function () {
           this.mouse.x = e.offsetX;
           this.mouse.y = e.offsetY;
         }
+      });
+
+      document.addEventListener("keydown", (event) => {
+        this.pressedKey = event.key;
+      });
+      document.addEventListener("keyup", (event) => {
+        this.pressedKey = "";
       });
     }
 
@@ -745,18 +776,19 @@ window.addEventListener("load", function () {
     render(context, deltaTime) {
       this.deltaTime = deltaTime * 0.001;
 
-      //add the eggs
-      this.addEggs();
-
       //populate the objects array
       this.objects = [
-        this.player,
         ...this.obstacles,
-        ...this.eggs,
         ...this.enemies,
-        ...this.larvae,
         ...this.particles,
+        ...this.larvae,
+        ...this.eggs,
       ];
+
+      //if the game is over, the player will not be rendered
+      if (!this.gameOver) {
+        this.objects = [...this.objects, this.player];
+      }
 
       let sortedObjects = this.objects.sort((a, b) => {
         return a.collisionY - b.collisionY;
@@ -774,6 +806,9 @@ window.addEventListener("load", function () {
 
       this.updateLarvae();
 
+      //add the eggs
+      this.addEggs();
+
       //remove unwanted objects
       this.removeObjects();
 
@@ -782,6 +817,18 @@ window.addEventListener("load", function () {
 
       //render the dashboard
       this.renderDashboard(context);
+
+      //display win/lose message
+      const total = this.eatenLarvae + this.savedLarvae;
+      if (this.eatenLarvae >= this.totalEggs / 2) {
+        this.gameOver = true;
+        this.gameWin = false;
+        this.displayMessage(context);
+      } else if (total >= this.totalEggs) {
+        this.gameOver = true;
+        this.gameWin = true;
+        this.displayMessage(context);
+      }
     }
 
     addEggs() {
@@ -819,7 +866,6 @@ window.addEventListener("load", function () {
     hatchEgg() {
       //this.larvae.push(newLarva);
       this.eggs.forEach((egg) => {
-        //console.log(egg.eggIncubationTimer + " " + this.eggIncubationTime);
         if (egg.eggIncubationTimer > this.eggIncubationTime) {
           const newLarva = new Larva(this, this.eggs[0]);
           this.larvae.push(newLarva);
@@ -835,7 +881,8 @@ window.addEventListener("load", function () {
       //larvae that have made it
       this.larvae.forEach((larva) => {
         if (larva.collisionY < this.larvaUpperLimit) {
-          this.addScore();
+          this.savedLarvae++;
+          if (!this.gameOver) this.addScore(larva);
           this.createFireFlies(larva);
         }
       });
@@ -857,9 +904,10 @@ window.addEventListener("load", function () {
         this.particles.push(fireFlies);
       }
     }
+
     createSparks(larva) {
       //create a random number of fireflies each time
-      const numberOfSparks = Math.random() * 3 + 3;
+      const numberOfSparks = Math.random() * 3 + 6;
 
       for (let i = 0; i <= numberOfSparks; i++) {
         const spark = new Spark(this, larva, this.sparksColor);
@@ -903,15 +951,24 @@ window.addEventListener("load", function () {
       });
     }
 
-    addScore() {
-      this.score++;
+    addScore(larva) {
+      // the longer the larvas life, the higher the score
+      const adult = larva.adult;
+      const addScore = adult ? this.adultLarvaScore : this.youngLarvaScore;
+      this.score += addScore;
+      this.storeNewScore();
+      //console.log(localStorage.score);
     }
 
     renderDashboard(context) {
       //render the score and other texts text
       context.save();
+      context.shadowOffsetX = 4;
+      context.shadowOffsetY = 4;
+      context.shadowColor = "black";
+      context.shadowBlur = 2;
       context.textAlign = "left";
-      context.fillText(`Saved: ${this.score}`, 50, 50);
+      context.fillText(`Saved: ${this.savedLarvae}`, 50, 50);
       context.fillText(`Eaten: ${this.eatenLarvae}`, 50, 100);
       context.fillText(
         `${this.spawnedEggs} of ${this.totalEggs} eggs`,
@@ -921,8 +978,70 @@ window.addEventListener("load", function () {
       context.restore();
       context.save();
       context.textAlign = "center";
+      ctx.font = `50px ${font}`;
       context.fillText(`Score: ${this.score}`, this.width / 2, 70);
       context.restore();
+    }
+
+    displayMessage(context) {
+      let message1 = "";
+      let message2 = "";
+
+      //win-lose logics
+      const total = this.eatenLarvae + this.savedLarvae;
+      if (!this.gameWin) {
+        message1 = "Gameover!";
+        message2 = "Sorry, half the hatchlings were eaten.";
+      } else if (this.gameWin) {
+        const bestScore = localStorage.score;
+        message1 = "WINNER!";
+        if (this.score > bestScore) {
+          message2 = `You've beaten your previous record.`;
+        } else {
+          message2 = `your best score so far: ${bestScore}! `;
+        }
+      }
+
+      context.save();
+      context.fillStyle = "rgba(0,0,0,0.5)";
+      context.fillRect(0, 0, this.width, this.height);
+      context.shadowOffsetX = 4;
+      context.shadowOffsetY = 4;
+      context.shadowColor = "black";
+      context.shadowBlur = 2;
+      context.fillStyle = "white";
+      context.textAlign = "center";
+      context.font = `120px ${font}`;
+      context.fillText(message1, this.width * 0.5, this.height * 0.5);
+      if (this.gameWin) {
+        context.font = `40px ${font}`;
+        context.fillText(`your score: ${this.score}`, this.width * 0.5, 411);
+      }
+      context.font = `40px ${font}`;
+      context.fillText(message2, this.width * 0.5, this.height * 0.5 + 100);
+      context.font = `20px ${font}`;
+      context.fillText("Press 'R' to restart.", 810, 706);
+      context.font = `20px ${font}`;
+      context.fillText("Press 'C' to reset memory.", 1020, 706); //1020 , 706
+      context.restore();
+      //console.log(this.mouse.x, this.mouse.y);
+
+      //console.log(this.pressedKey.toUpperCase());
+      if (this.pressedKey.toUpperCase() === "R") {
+        console.log("restarting");
+      }
+      if (this.pressedKey.toUpperCase() === "C") {
+        console.log("clearing memory");
+        //localStorage.score = "";
+      }
+    }
+
+    storeNewScore() {
+      //the highest score will be stored in the memory
+      //https://blog.bitsrc.io/how-to-store-data-on-the-browser-with-javascript-9c57fc0f91b0
+      if (localStorage.score < this.score) {
+        localStorage.score = this.score;
+      }
     }
 
     init() {
