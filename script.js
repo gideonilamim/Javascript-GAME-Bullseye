@@ -673,7 +673,7 @@ window.addEventListener("load", function () {
       //eggs
       this.eggs = new Egg(this);
       this.eggs = [];
-      this.totalEggs = 50;
+      this.totalEggs = 2;
       this.spawnedEggs = 0;
       this.maxNumberOfEggs = 5; //at once
       this.eggSpawnInterval = 2;
@@ -806,7 +806,7 @@ window.addEventListener("load", function () {
       if (!this.gameOver) {
         this.objects = [...this.objects, this.player];
       }
-      console.log(this.objects);
+
       let sortedObjects = this.objects.sort((a, b) => {
         return a.collisionY - b.collisionY;
       });
@@ -1029,7 +1029,8 @@ window.addEventListener("load", function () {
       context.fillStyle = "white";
       context.textAlign = "center";
       context.font = `120px ${font}`;
-      context.fillText(message1, this.width * 0.5, this.height * 0.5);
+      this.animateWord(context, message1);
+
       if (this.gameWin) {
         context.font = `40px ${font}`;
         context.fillText(`your score: ${this.score}`, this.width * 0.5, 411);
@@ -1052,6 +1053,26 @@ window.addEventListener("load", function () {
         console.log("clearing memory");
         //localStorage.score = "";
       }
+    }
+    animateWord(context, word) {
+      const letterSpacing = 60;
+      const start = this.width * 0.5 - word.length * letterSpacing * 0.5;
+
+      context.save();
+      for (let i = 1; i <= word.length + 1; i++) {
+        context.font = `120px ${font}`;
+        const pace = this.winGame
+          ? 20 * Math.sin(i + this.runningTime * 10)
+          : 10 * Math.sin(i + this.runningTime * 4);
+
+        context.fillText(
+          word.charAt(i - 1),
+          start + i * letterSpacing,
+          this.height * 0.5 + pace
+        );
+      }
+
+      context.restore();
     }
 
     storeNewScore() {
