@@ -2,7 +2,7 @@
 
 ---
 
-please, feel free to check the game out. link to the streaming game. @[Bullseye GAME](https://gid-lamim.github.io/Javascript-GAME-Bullseye/)
+please, feel free to check the game out. link to the streaming game. @[Bullseye GAME](https://gideonilamim.github.io/Javascript-GAME-Bullseye/)
 
 or the tutorial video on You Tube: @[JavaScript GameDev Tutorial – Code an Animated Physics Game [Full Course]](https://www.youtube.com/watch?v=U34l-Xz5ynU&list=LL&index=22)
 
